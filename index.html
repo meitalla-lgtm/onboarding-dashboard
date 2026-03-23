@@ -735,14 +735,18 @@
           reviewerSig &&
           Number(reviewerSig.manual_doc_count || 0) > 0
         );
-        // Lumen-aligned manual evidence:
-        // manual ORN ticket evidence OR requirement-manager human reviewer evidence.
+        const strictManualEvidence = !!(
+          strict &&
+          Number(strict.has_approval_ts || 0) === 1 &&
+          strict.strict_class === "manual"
+        );
         const firstOutcomeLower = raw.trim().toLowerCase();
         const hasLinkedOrnTicket = !!(autoSig && Number(autoSig.orn_any_cnt || 0) > 0);
         const isSingleTicketUnknownNoReviewer =
           manualCnt === 1 &&
           (firstOutcomeLower === "unknown" || firstOutcomeLower === "") &&
           !reviewerManualEvidence &&
+          !strictManualEvidence &&
           !MANUAL_TICKET_WINDOW_OVERRIDES.has(id) &&
           !hasLinkedOrnTicket;
         const isManualApproval = isSingleTicketUnknownNoReviewer
@@ -750,7 +754,8 @@
           : (
             MANUAL_TICKET_WINDOW_OVERRIDES.has(id) ||
             manualCnt > 0 ||
-            reviewerManualEvidence
+            reviewerManualEvidence ||
+            strictManualEvidence
           );
         const explicitManualReopen =
           a1 === "reopened" ||
