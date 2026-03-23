@@ -738,11 +738,13 @@
         // Lumen-aligned manual evidence:
         // manual ORN ticket evidence OR requirement-manager human reviewer evidence.
         const firstOutcomeLower = raw.trim().toLowerCase();
+        const hasLinkedOrnTicket = !!(autoSig && Number(autoSig.orn_any_cnt || 0) > 0);
         const isSingleTicketUnknownNoReviewer =
           manualCnt === 1 &&
           (firstOutcomeLower === "unknown" || firstOutcomeLower === "") &&
           !reviewerManualEvidence &&
-          !MANUAL_TICKET_WINDOW_OVERRIDES.has(id);
+          !MANUAL_TICKET_WINDOW_OVERRIDES.has(id) &&
+          !hasLinkedOrnTicket;
         const isManualApproval = isSingleTicketUnknownNoReviewer
           ? false
           : (
