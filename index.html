@@ -1476,7 +1476,13 @@
       render();
     }
 
-    init();
+    __loadData().then(() => {
+      init();
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }).catch((err) => {
+      document.getElementById('loadingOverlay').innerHTML =
+        '<div style="color:#ef4444;font-size:16px;">Failed to load data: ' + err.message + '</div>';
+    });
   </script>
 </body>
 </html>
