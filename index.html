@@ -1,0 +1,1482 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Onboarding Funnel</title>
+  <style>
+    :root { --bg:#f3f4f6; --card:#fff; --border:#e5e7eb; --text:#111827; --muted:#6b7280; --green:#10b981; --blue:#3b82f6; --amber:#f59e0b; --red:#ef4444; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:Inter,Segoe UI,Arial,sans-serif; }
+    .wrap { max-width:1260px; margin:0 auto; padding:14px 10px 18px; }
+    .title-row { display:flex; justify-content:space-between; align-items:flex-end; }
+    h1 { margin:0; font-size:42px; letter-spacing:-0.02em; }
+    .sub { color:var(--muted); margin-top:4px; font-size:16px; }
+    .actions { display:flex; gap:8px; }
+    .btn { border:1px solid var(--border); background:#fff; border-radius:10px; padding:8px 12px; font-weight:600; color:#374151; }
+    .chip-row { margin-top:14px; display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr 1fr; gap:8px; }
+    .chip { border:1px solid var(--border); background:#fff; border-radius:12px; padding:10px 12px; font-weight:600; color:#374151; font-size:14px; }
+    .filters { margin-top:10px; display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+    .filter { border:1px solid var(--border); background:#fff; border-radius:12px; padding:8px 10px; }
+    .filter label { display:block; color:#6b7280; font-size:12px; margin-bottom:4px; font-weight:600; }
+    .filter select, .filter input { width:100%; border:1px solid #d1d5db; border-radius:8px; padding:8px; font-size:14px; }
+    .kpi-grid { margin-top:12px; display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+    .kpi { background:#fff; border:1px solid var(--border); border-radius:14px; padding:12px 14px; }
+    .kpi .t { color:#6b7280; text-transform:uppercase; letter-spacing:.04em; font-weight:700; font-size:12px; min-height:30px; }
+    .kpi .v { font-size:34px; font-weight:800; line-height:1.05; }
+    .kpi .d { margin-top:8px; font-size:13px; color:#16a34a; font-weight:600; min-height:16px; }
+    .grid2 { margin-top:12px; display:grid; grid-template-columns:2fr 1fr; gap:10px; }
+    .card { background:#fff; border:1px solid var(--border); border-radius:14px; padding:14px; }
+    .h3 { font-size:20px; font-weight:700; margin:0 0 4px; }
+    .small { color:var(--muted); font-size:14px; }
+    .f-row { margin-top:14px; }
+    .f-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .f-label { font-weight:700; }
+    .f-right { font-weight:700; }
+    .track { width:100%; height:42px; border-radius:12px; background:#d1d5db; overflow:hidden; }
+    .fill { height:100%; border-radius:12px; }
+    .r { background:linear-gradient(90deg,#ef4444,#fb7185); }
+    .o { background:linear-gradient(90deg,#f97316,#f59e0b); }
+    .g { background:linear-gradient(90deg,#10b981,#34d399); }
+    .drop { color:#ef4444; font-weight:600; font-size:14px; margin-top:6px; }
+    .alert { border:1px solid var(--border); border-radius:12px; padding:12px; margin-top:10px; }
+    .a-warn { background:#fff7ed; border-color:#fed7aa; }
+    .a-good { background:#ecfdf5; border-color:#bbf7d0; }
+    .a-bad { background:#fef2f2; border-color:#fecaca; }
+    .grid3 { margin-top:12px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .tbl-title { font-size:24px; font-weight:800; margin:0 0 6px; }
+    .tbl-sub { color:#6b7280; font-size:13px; margin-bottom:8px; }
+    .tbl-row { display:grid; grid-template-columns:1.8fr .9fr .6fr .6fr; gap:8px; align-items:center; padding:10px 0; border-top:1px solid #f0f1f3; }
+    .lbl { display:flex; align-items:center; gap:8px; font-weight:600; }
+    .dot { width:10px; height:10px; border-radius:999px; display:inline-block; }
+    .dot.green { background:#10b981; } .dot.blue { background:#3b82f6; } .dot.amber { background:#f59e0b; } .dot.red { background:#ef4444; } .dot.gray { background:#6b7280; }
+    .num { font-weight:700; } .pct { color:#6b7280; font-weight:600; } .delta { color:#16a34a; font-weight:600; }
+    .tbl-row.clickable { cursor:pointer; }
+    .tbl-row.clickable:hover { background:#f8fafc; }
+    .invest-grid { margin-top:10px; display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:end; }
+    .invest-grid .filter { margin:0; }
+    .invest-list { margin-top:10px; width:100%; min-height:120px; max-height:260px; border:1px solid #d1d5db; border-radius:10px; padding:10px; font-family:Consolas,Menlo,monospace; font-size:12px; overflow:auto; background:#f9fafb; white-space:pre-wrap; }
+    .trend-grid { margin-top:10px; display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .trend-chart { border:1px solid var(--border); border-radius:12px; padding:10px; background:#fff; }
+    .trend-head { display:flex; justify-content:space-between; align-items:flex-end; gap:8px; margin-bottom:8px; }
+    .trend-title { font-size:13px; font-weight:700; color:#374151; }
+    .trend-latest { font-size:16px; font-weight:800; color:#111827; }
+    .trend-canvas { width:100%; height:150px; border:1px solid #eef0f3; border-radius:10px; background:#fcfcfd; }
+    .trend-empty { display:flex; align-items:center; justify-content:center; color:#6b7280; font-size:12px; height:100%; }
+  </style>
+</head>
+<body>
+    <div id="loadingOverlay" style="position:fixed;inset:0;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px;">
+      <div style="width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+      <div style="color:#6b7280;font-family:Inter,sans-serif;font-size:14px;">Loading dashboard data...</div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  <div class="wrap">
+    <div class="title-row">
+      <div>
+        <h1>Customer Onboarding Funnel</h1>
+        <div class="sub">Approved population view · PS requirement and bank statement ticket flow</div>
+      </div>
+      <div class="actions">
+        <div class="btn" onclick="render()">Refresh</div>
+        <div class="btn" onclick="window.print()">Export</div>
+      </div>
+    </div>
+
+    <div class="chip-row">
+      <div class="chip" id="chipMainPeriod">Primary logic: FDC account approval auto-log</div>
+      <div class="chip" id="chipComparePeriod">PS trigger: ContextTypeId 69 + SoftNoGo</div>
+      <div class="chip" id="chipFilters">Ticket logic: Post-softnogo bank doc incidents</div>
+      <div class="chip" id="chipDefs">Analyst enrichments included where available</div>
+      <div class="chip" id="definitionVersion">Definition Version: v2026-03-12</div>
+      <div class="chip" id="lastUpdated">Last updated: live</div>
+    </div>
+    <div class="small" id="chipSourceTs" style="margin-top:6px;"></div>
+
+    <div class="filters">
+      <div class="filter"><label>Date Range (Main)</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><input id="mainStart" type="date" /><input id="mainEnd" type="date" /></div></div>
+      <div class="filter"><label>Date Range (Comparison)</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><input id="compStart" type="date" /><input id="compEnd" type="date" /></div></div>
+      <div class="filter"><label>Country Business Tier</label><select id="countryBusinessTierFilter"></select></div>
+      <div class="filter"><label>Country Group</label><select id="countryGroupFilter"></select></div>
+      <div class="filter"><label>IP Country Name</label><select id="ipCountryFilter"></select></div>
+      <div class="filter"><label>Reg Country Name</label><select id="regCountryFilter"></select></div>
+      <div class="filter"><label>AH Type</label><select id="ahTypeFilter"></select></div>
+      <div class="filter"><label>Is Blocked</label><select id="isBlockedFilter"></select></div>
+      <div class="filter"><label>Is Bot</label><select id="isBotFilter"></select></div>
+      <div class="filter"><label>Is Bot Expanded</label><select id="isBotExpandedFilter"></select></div>
+      <div class="filter"><label>Is Arkose Bot</label><select id="isArkoseBotFilter"></select></div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi"><div class="t">Approved Customers</div><div class="v" id="kpiApproved">--</div><div class="d" id="kpiApprovedDelta">--</div></div>
+      <div class="kpi"><div class="t">Auto Approved</div><div class="v" id="kpiAutoAny">--</div><div class="d" id="kpiAutoAnyDelta">--</div></div>
+      <div class="kpi"><div class="t">Avg E2E Time to Auto Approval</div><div class="v" id="kpiHours">--</div><div class="d" id="kpiHoursDelta">--</div></div>
+      <div class="kpi"><div class="t">Manually Approved</div><div class="v" id="kpiWithPs">--</div><div class="d" id="kpiWithPsDelta">--</div></div>
+      <div class="kpi"><div class="t">Avg E2E Time to Manual Approval</div><div class="v" id="kpiWithoutPs">--</div><div class="d" id="kpiWithoutPsDelta">--</div></div>
+      <div class="kpi"><div class="t">Customers With Ticket After Approval (30d)</div><div class="v" id="kpiWithTicket">--</div><div class="d" id="kpiWithTicketDelta">--</div></div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="h3">Weekly Trends (Approval Week)</div>
+      <div class="small" id="weeklyTrendMeta">Last 12 weeks in selected scope.</div>
+      <div class="trend-grid">
+        <div class="trend-chart">
+          <div class="trend-head"><div class="trend-title">% Manual Approved / Approved</div><div class="trend-latest" id="trendManualPctLatest">--</div></div>
+          <div class="trend-canvas" id="trendManualPctChart"></div>
+        </div>
+        <div class="trend-chart">
+          <div class="trend-head"><div class="trend-title">Avg E2E Days (Manual Approved)</div><div class="trend-latest" id="trendManualE2ELatest">--</div></div>
+          <div class="trend-canvas" id="trendManualE2EChart"></div>
+        </div>
+        <div class="trend-chart">
+          <div class="trend-head"><div class="trend-title">% First Touch Approved / Approved</div><div class="trend-latest" id="trendFirstTouchLatest">--</div></div>
+          <div class="trend-canvas" id="trendFirstTouchChart"></div>
+        </div>
+        <div class="trend-chart">
+          <div class="trend-head"><div class="trend-title">% Customers With KYC Ticket Post Approval</div><div class="trend-latest" id="trendKycTicketLatest">--</div></div>
+          <div class="trend-canvas" id="trendKycTicketChart"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="h3">Sign-up to Approval Funnel</div>
+        <div class="small">Top funnel starts with completed sign-up AHs, then CLM document submission progression and final approval</div>
+        <div id="funnelRows"></div>
+        <div class="small" style="margin-top:10px;" id="funnelFooter"></div>
+      </div>
+      <div class="card">
+        <div class="h3">Proactive Alerts</div>
+        <div class="small">Gaps between requirement triggered and customer follow-up</div>
+        <div class="alert a-warn">PS-required without ticket: <b id="alertNoTicket">--</b></div>
+        <div class="alert a-good">Ticket conversion among PS-required: <b id="alertConversion">--</b></div>
+        <div class="alert a-bad">Median hours approval to SoftNoGo: <b id="alertMedianHours">--</b></div>
+        <div class="small" style="margin-top:10px; font-weight:600;">Outcome</div>
+        <div class="alert" style="background:#f8fafc; border-color:#e2e8f0;">Tickets closed among PS-required with ticket: <b id="alertTicketsClosed">--</b></div>
+        <div class="small" style="margin-top:6px;"><a href="monitoring/latest_flags.md" target="_blank" style="color:var(--blue);">Daily monitoring flags →</a></div>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="card">
+        <div class="tbl-title">First Review Outcome</div>
+        <div class="tbl-sub" id="screenBase1">Base: --</div>
+        <div id="screenRows1"></div>
+      </div>
+      <div class="card">
+        <div class="tbl-title">2nd Review Attempt</div>
+        <div class="tbl-sub" id="screenBase2">Base: --</div>
+        <div id="screenRows2"></div>
+      </div>
+      <div class="card">
+        <div class="tbl-title">3rd or More Attempt</div>
+        <div class="tbl-sub" id="screenBase3">Base: --</div>
+        <div id="screenRows3"></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="h3">Post-Approval Requirements & Tickets</div>
+        <div class="small">All requirement triggers opened post-approval and within 30 days</div>
+        <div class="small" id="postApprovalBaseMeta" style="margin-top:6px;">Base: -- approved customers (date range)</div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr); margin-top:12px;">
+          <div class="kpi"><div class="t">% Customers With New Requirement Post Approval</div><div class="v" id="kpiTReqRate">--</div><div class="d" id="kpiTReqCount">--</div></div>
+          <div class="kpi"><div class="t">% Customers With KYC Ticket</div><div class="v" id="kpiTTicketRate">--</div><div class="d" id="kpiTTicketCount">--</div></div>
+          <div class="kpi"><div class="t">Number of Tickets per Customer</div><div class="v" id="kpiTTicketsPerCustomer">--</div><div class="d" id="kpiTTicketsPerCustomerMeta">--</div></div>
+        </div>
+        <div class="small" style="margin-top:10px;">Distribution by Trigger (tickets)</div>
+        <div class="small" id="postApprovalDistMeta" style="margin-top:4px;">--</div>
+        <div id="kycReasonRows"></div>
+      </div>
+      <div class="card">
+        <div class="h3">Reason Drill-down (Next)</div>
+        <div class="small">Reason-level split can be added per trigger in drill-down view.</div>
+        <div id="kycRegionRows" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="h3">Embedded Business Definitions</div>
+      <div class="small">Agreed approval, E2E, and post-approval ticket definitions used by this dashboard.</div>
+      <div id="definitionsRows"></div>
+    </div>
+
+    <div class="card" id="investCard" style="margin-top:12px;">
+      <div class="h3">Customer Investigation Drill-down</div>
+      <div class="small">Select a section and data point to list AH IDs under current filters.</div>
+      <div class="invest-grid">
+        <div class="filter"><label>Section</label><select id="investSection"></select></div>
+        <div class="filter"><label>Data Point</label><select id="investMetric"></select></div>
+        <div class="btn" id="investCopyBtn">Copy IDs</div>
+      </div>
+      <div class="small" id="investMeta" style="margin-top:8px;">Total AH IDs: --</div>
+      <div class="invest-list" id="investList">No drill-down selected.</div>
+    </div>
+  </div>
+
+  <script>
+
+    async function __loadData() {
+      const resp = await fetch('data.json.gz');
+      const ds = new DecompressionStream('gzip');
+      const decompressed = resp.body.pipeThrough(ds);
+      const text = await new Response(decompressed).text();
+      const d = JSON.parse(text);
+      DATA = d.DATA;
+      WEEKLY = d.WEEKLY;
+      ATTEMPTS_WEEKLY = d.ATTEMPTS_WEEKLY;
+      TRIGGERS = d.TRIGGERS;
+      CLM_WEEKLY = d.CLM_WEEKLY.map((r) => ({
+        date: r[0], ah_id: r[1], country_business_tier: r[2], country_group: r[3],
+        ip_country_name: r[4], reg_country_name: r[5], ah_type: r[6], is_blocked: r[7],
+        is_bot: r[8], is_bot_expanded: r[9], is_arkose_bot: r[10],
+        completed_signup_step: r[11], requests_submitted_step: r[12],
+        submitted_all_docs_step: r[13], approved_accounts: r[14], confirmed_tcs_step: r[15]
+      }));
+      AUTO_REOPEN_SIGNAL = d.AUTO_REOPEN_SIGNAL.map((r) => ({
+        ah_id: r[0], has_reopened_event: r[1], has_pending_event: r[2],
+        has_approved_event: r[3], reopen_pending_evt_cnt: r[4],
+        reopen_pending_non_app_cnt: r[5], orn_any_cnt: r[6], orn_kyc5_cnt: r[7]
+      }));
+      ATTEMPT_SIGNAL = d.ATTEMPT_SIGNAL.map((r) => ({
+        ah_id: r[0], manual_ticket_count: r[1], attempt1_outcome: r[2],
+        attempt2_outcome: r[3], attempt3_outcome: r[4]
+      }));
+      STRICT_TOUCH_SIGNAL = d.STRICT_TOUCH_SIGNAL.map((r) => ({
+        ah_id: r[0], has_approval_ts: r[1], manual_ticket_count: r[2],
+        touch_bucket: r[3], strict_class: r[4]
+      }));
+      REVIEWER_SIGNAL = d.REVIEWER_SIGNAL.map((r) => ({
+        ah_id: r[0], approved_doc_count: r[1], allowed_auto_doc_count: r[2],
+        manual_doc_count: r[3], non_allowed_reviewers: r[4]
+      }));
+    }
+
+    let DATA = null;
+    let WEEKLY = null;
+    let CLM_WEEKLY = null;
+    let AUTO_REOPEN_SIGNAL = null;
+    let ATTEMPT_SIGNAL = null;
+    let STRICT_TOUCH_SIGNAL = null;
+    let REVIEWER_SIGNAL = null;
+    let ATTEMPTS_WEEKLY = null;
+    let TRIGGERS = null;
+    const MANUAL_TICKET_WINDOW_HOURS = 2;
+    const MANUAL_TICKET_WINDOW_OVERRIDES = new Set(["101957682"]);
+    const AUTO_REOPEN_EXCLUDE_IDS = new Set(["102307825"]);
+
+    const fmtInt = (v) => Number(v || 0).toLocaleString();
+    const fmtPct = (v) => `${(100 * Number(v || 0)).toFixed(1)}%`;
+    const fmtPctNa = (num, den) => den > 0 ? fmtPct(num / den) : "n/a";
+    const fmtHours = (v) => Number.isFinite(Number(v)) ? `${Number(v).toFixed(1)}h` : "n/a";
+    const fmtDays = (v) => Number.isFinite(Number(v)) ? `${(Number(v) / 24).toFixed(1)}d` : "n/a";
+    const diffCount = (curr, prev) => `${curr - prev >= 0 ? "+" : ""}${fmtInt(curr - prev)} vs comparison`;
+    const diffPct = (curr, prev) => `${((curr - prev) * 100 >= 0 ? "+" : "")}${((curr - prev) * 100).toFixed(1)}pp vs comparison`;
+    const diffHours = (curr, prev) => `${curr - prev >= 0 ? "+" : ""}${(curr - prev).toFixed(1)}h vs comparison`;
+    const monthShort = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const toDate = (s) => {
+      const d = new Date(`${s}T00:00:00`);
+      return Number.isNaN(d.getTime()) ? null : d;
+    };
+    const addDays = (d, n) => {
+      const x = new Date(d.getTime());
+      x.setDate(x.getDate() + n);
+      return x;
+    };
+    const fmtDate = (d) => `${monthShort[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    const fmtRange = (start, end) => {
+      if (!start || !end) return "Unknown range";
+      if (start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth()) {
+        return `${monthShort[start.getMonth()]} ${start.getDate()} - ${end.getDate()}, ${start.getFullYear()}`;
+      }
+      return `${fmtDate(start)} - ${fmtDate(end)}`;
+    };
+
+    function rowHTML(label, value, base, dotClass) {
+      const pct = base ? Math.round((value / base) * 100) : 0;
+      return `<div class="tbl-row"><div class="lbl"><span class="dot ${dotClass}"></span>${label}</div><div class="num">${fmtInt(value)}</div><div class="pct">${pct}%</div><div class="delta">--</div></div>`;
+    }
+
+    function rowHTMLDelta(label, value, base, dotClass, deltaText) {
+      const pct = base ? Math.round((value / base) * 100) : 0;
+      return `<div class="tbl-row"><div class="lbl"><span class="dot ${dotClass}"></span>${label}</div><div class="num">${fmtInt(value)}</div><div class="pct">${pct}%</div><div class="delta">${deltaText || "--"}</div></div>`;
+    }
+
+    function rowHTMLClickable(label, value, base, dotClass, deltaText, section, metric) {
+      const pct = base ? Math.round((value / base) * 100) : 0;
+      return `<div class="tbl-row clickable" data-invest-section="${section}" data-invest-metric="${metric}"><div class="lbl"><span class="dot ${dotClass}"></span>${label}</div><div class="num">${fmtInt(value)}</div><div class="pct">${pct}%</div><div class="delta">${deltaText || "--"}</div></div>`;
+    }
+
+    function barHTML(label, value, top, fillClass, dropText) {
+      const width = top ? (value / top) * 100 : 0;
+      return `<div class="f-row"><div class="f-head"><div class="f-label">${label}</div><div class="f-right">${fmtInt(value)}</div></div><div class="track"><div class="fill ${fillClass}" style="width:${width.toFixed(1)}%"></div></div><div class="drop">${dropText}</div></div>`;
+    }
+
+    function renderWeeklyLineChart(targetId, points, valueKey, color, latestId, valueFormatter) {
+      const el = document.getElementById(targetId);
+      const latestEl = document.getElementById(latestId);
+      if (!el || !latestEl) return;
+      if (!points.length) {
+        el.innerHTML = `<div class="trend-empty">No weekly data</div>`;
+        latestEl.textContent = "--";
+        return;
+      }
+      const vals = points
+        .map((p) => Number(p[valueKey]))
+        .filter((v) => Number.isFinite(v));
+      if (!vals.length) {
+        el.innerHTML = `<div class="trend-empty">No metric data</div>`;
+        latestEl.textContent = "n/a";
+        return;
+      }
+      const latestPoint = [...points].reverse().find((p) => Number.isFinite(Number(p[valueKey])));
+      latestEl.textContent = latestPoint ? valueFormatter(Number(latestPoint[valueKey])) : "n/a";
+
+      const w = 380;
+      const h = 150;
+      const padL = 34;
+      const padR = 10;
+      const padT = 10;
+      const padB = 26;
+      const minV = Math.min(...vals);
+      const maxVRaw = Math.max(...vals);
+      const maxV = maxVRaw === minV ? (minV + 1) : maxVRaw;
+      const xFor = (idx) => {
+        const denom = Math.max(1, points.length - 1);
+        return padL + (idx / denom) * (w - padL - padR);
+      };
+      const yFor = (v) => {
+        const t = (v - minV) / (maxV - minV);
+        return padT + (1 - t) * (h - padT - padB);
+      };
+      const coords = points
+        .map((p, idx) => ({ idx, v: Number(p[valueKey]) }))
+        .filter((x) => Number.isFinite(x.v))
+        .map((x) => ({ x: xFor(x.idx), y: yFor(x.v), v: x.v }));
+      const pathD = coords.map((c, i) => `${i === 0 ? "M" : "L"} ${c.x.toFixed(2)} ${c.y.toFixed(2)}`).join(" ");
+
+      const minLabel = valueFormatter(minV);
+      const maxLabel = valueFormatter(maxVRaw);
+      const firstWeek = points[0].week || "";
+      const lastWeek = points[points.length - 1].week || "";
+      const svg = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="none">
+        <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e5e7eb" stroke-width="1"/>
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${h - padB}" stroke="#e5e7eb" stroke-width="1"/>
+        <line x1="${padL}" y1="${((padT + (h - padB)) / 2).toFixed(2)}" x2="${w - padR}" y2="${((padT + (h - padB)) / 2).toFixed(2)}" stroke="#f1f5f9" stroke-width="1"/>
+        ${coords.length >= 2 ? `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>` : ""}
+        ${coords.map((c) => `<circle cx="${c.x.toFixed(2)}" cy="${c.y.toFixed(2)}" r="2.5" fill="${color}"/>`).join("")}
+        <text x="2" y="${padT + 8}" fill="#6b7280" font-size="10">${maxLabel}</text>
+        <text x="2" y="${h - padB}" fill="#6b7280" font-size="10">${minLabel}</text>
+        <text x="${padL}" y="${h - 8}" fill="#6b7280" font-size="10">${firstWeek}</text>
+        <text x="${w - padR}" y="${h - 8}" fill="#6b7280" font-size="10" text-anchor="end">${lastWeek}</text>
+      </svg>`;
+      el.innerHTML = svg;
+    }
+
+    function uniqueSorted(values) {
+      return [...new Set(values.filter(Boolean).map((v) => String(v)))].sort();
+    }
+
+    function setFromRows(rows, predicate) {
+      return new Set(rows.filter(predicate).map((r) => String(r.ah_id || "")).filter(Boolean));
+    }
+
+    function renderInvestigationPanel(catalog) {
+      const sectionSel = document.getElementById("investSection");
+      const metricSel = document.getElementById("investMetric");
+      const listEl = document.getElementById("investList");
+      const metaEl = document.getElementById("investMeta");
+      const copyBtn = document.getElementById("investCopyBtn");
+      if (!catalog || !catalog.length) {
+        sectionSel.innerHTML = `<option value="">No section</option>`;
+        metricSel.innerHTML = `<option value="">No metric</option>`;
+        listEl.textContent = "No drill-down data available.";
+        metaEl.textContent = "Total AH IDs: 0";
+        copyBtn.onclick = null;
+        return;
+      }
+
+      const sectionOptions = uniqueSorted(catalog.map((x) => x.section));
+      sectionSel.innerHTML = sectionOptions.map((s) => `<option value="${s}">${s}</option>`).join("");
+      const wantedSection = window.__investTarget ? String(window.__investTarget.section || "") : "";
+      const selectedSection = wantedSection && sectionOptions.includes(wantedSection)
+        ? wantedSection
+        : (sectionOptions.includes(sectionSel.value) ? sectionSel.value : sectionOptions[0]);
+      sectionSel.value = selectedSection;
+
+      const sectionMetrics = catalog.filter((x) => x.section === selectedSection);
+      metricSel.innerHTML = sectionMetrics.map((x, i) => `<option value="${i}">${x.metric}</option>`).join("");
+      if (window.__investTarget && window.__investTarget.section === selectedSection) {
+        const wantedMetric = String(window.__investTarget.metric || "");
+        const idx = sectionMetrics.findIndex((x) => x.metric === wantedMetric);
+        if (idx >= 0) metricSel.value = String(idx);
+        window.__investTarget = null;
+      }
+      const selectedMetric = Number(metricSel.value || 0);
+      const active = sectionMetrics[selectedMetric] || sectionMetrics[0];
+      if (!active) {
+        listEl.textContent = "No metric selected.";
+        metaEl.textContent = "Total AH IDs: 0";
+        return;
+      }
+      const ids = uniqueSorted([...(active.ids || [])]);
+      listEl.textContent = ids.length ? ids.join("\n") : "No AH IDs found for this data point under current filters.";
+      metaEl.textContent = `Total AH IDs: ${fmtInt(ids.length)}${active.note ? ` · ${active.note}` : ""}`;
+      copyBtn.onclick = async () => {
+        if (!ids.length) return;
+        try {
+          await navigator.clipboard.writeText(ids.join("\n"));
+          copyBtn.textContent = "Copied";
+          setTimeout(() => { copyBtn.textContent = "Copy IDs"; }, 1200);
+        } catch (e) {
+          copyBtn.textContent = "Copy failed";
+          setTimeout(() => { copyBtn.textContent = "Copy IDs"; }, 1200);
+        }
+      };
+    }
+
+    function metricSet(rows) {
+      const approved = rows.length;
+      const withPs = rows.filter(r => r.has_ps).length;
+      const withoutPs = approved - withPs;
+      const psRows = rows.filter(r => r.has_ps);
+      const withTicket = psRows.filter(r => r.has_ticket).length;
+      const withoutTicket = withPs - withTicket;
+      const withTicketClosed = psRows.filter(r => r.has_ticket_closed).length;
+      const hrs = psRows.map(r => r.hours_to_softnogo).filter(v => Number.isFinite(v));
+      const avgHours = hrs.length ? hrs.reduce((a,b)=>a+b,0) / hrs.length : 0;
+      const sorted = [...hrs].sort((a,b)=>a-b);
+      const medHours = sorted.length ? (sorted.length % 2 ? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2) : 0;
+      return { approved, withPs, withoutPs, withTicket, withoutTicket, withTicketClosed, avgHours, medHours };
+    }
+
+    const inDateRange = (dateStr, startStr, endStr) => {
+      if (!dateStr) return false;
+      if (!startStr || !endStr) return true;
+      return dateStr >= startStr && dateStr <= endStr;
+    };
+
+    function matchesFilter(v, selected, anyValue = "ANY") {
+      if (selected === anyValue) return true;
+      if (selected === "NOT_IN_ROLLOUT") {
+        const s = String(v ?? "").trim().toLowerCase();
+        return s !== "not in rollout" && s !== "" && s !== "none" && s !== "null" && s !== "unknown";
+      }
+      return String(v) === String(selected);
+    }
+
+    function matchesFilterProxy(v, selected, anyValue = "ANY") {
+      if (selected === anyValue) return true;
+      const s = String(v ?? "").trim().toLowerCase();
+      if (s === "" || s === "unknown" || s === "none" || s === "null") return true;
+      if (selected === "NOT_IN_ROLLOUT") return s !== "not in rollout";
+      return String(v) === String(selected);
+    }
+
+    function matchesAhType(selected, rawValue) {
+      if (selected === "ALL") return true;
+      if (selected === "CISP") {
+        const t = String(rawValue || "").trim().toLowerCase();
+        return t === "company" || t === "individual" || t === "sole proprietor";
+      }
+      const norm = (x) => String(x || "").trim().toLowerCase().replace(/\s+/g, " ");
+      return norm(selected) === norm(rawValue);
+    }
+
+    function matchesDataAhType(selected, rawValue) {
+      if (selected === "ALL") return true;
+      if (selected === "CISP") {
+        const t = String(rawValue || "").trim().toLowerCase();
+        return t === "company" || t === "individual" || t === "sole proprietor";
+      }
+      const norm = (x) => String(x || "").trim().toLowerCase().replace(/\s+/g, " ");
+      return norm(selected) === norm(rawValue);
+    }
+
+    function filteredRows(mainStart, mainEnd, pack, ahType) {
+      return DATA.filter((r) =>
+        inDateRange(r.registration_date, mainStart, mainEnd) &&
+        matchesFilterProxy(r.country_business_tier, pack.country_business_tier) &&
+        matchesFilterProxy(r.country_group, pack.country_group) &&
+        matchesFilterProxy(r.ip_country_name, pack.ip_country_name) &&
+        matchesFilterProxy(r.reg_country_name, pack.reg_country_name) &&
+        matchesFilterProxy(r.is_blocked, pack.is_blocked) &&
+        matchesFilterProxy(r.is_bot, pack.is_bot) &&
+        matchesFilterProxy(r.is_bot_expanded, pack.is_bot_expanded) &&
+        matchesFilterProxy(r.is_arkose_bot, pack.is_arkose_bot) &&
+        matchesDataAhType(ahType, r.customer_type || "Unknown")
+      );
+    }
+
+    function comparisonRows(compStart, compEnd, pack, ahType) {
+      if (!compStart || !compEnd) return [];
+      return DATA.filter((r) =>
+        inDateRange(r.registration_date, compStart, compEnd) &&
+        matchesFilterProxy(r.country_business_tier, pack.country_business_tier) &&
+        matchesFilterProxy(r.country_group, pack.country_group) &&
+        matchesFilterProxy(r.ip_country_name, pack.ip_country_name) &&
+        matchesFilterProxy(r.reg_country_name, pack.reg_country_name) &&
+        matchesFilterProxy(r.is_blocked, pack.is_blocked) &&
+        matchesFilterProxy(r.is_bot, pack.is_bot) &&
+        matchesFilterProxy(r.is_bot_expanded, pack.is_bot_expanded) &&
+        matchesFilterProxy(r.is_arkose_bot, pack.is_arkose_bot) &&
+        matchesDataAhType(ahType, r.customer_type || "Unknown")
+      );
+    }
+
+    function clmFunnelRows(startDate, endDate, pack, ahType) {
+      return CLM_WEEKLY.filter((r) =>
+        inDateRange(r.date, startDate, endDate) &&
+        matchesFilter(r.country_business_tier, pack.country_business_tier) &&
+        matchesFilter(r.country_group, pack.country_group) &&
+        matchesFilter(r.ip_country_name, pack.ip_country_name) &&
+        matchesFilter(r.reg_country_name, pack.reg_country_name) &&
+        matchesFilter(r.is_blocked, pack.is_blocked) &&
+        matchesFilter(r.is_bot, pack.is_bot) &&
+        matchesFilter(r.is_bot_expanded, pack.is_bot_expanded) &&
+        matchesFilter(r.is_arkose_bot, pack.is_arkose_bot) &&
+        matchesAhType(ahType, r.ah_type)
+      );
+    }
+
+    function render() {
+      const mainStart = document.getElementById("mainStart").value;
+      const mainEnd = document.getElementById("mainEnd").value;
+      const compStart = document.getElementById("compStart").value;
+      const compEnd = document.getElementById("compEnd").value;
+      const pack = {
+        country_business_tier: document.getElementById("countryBusinessTierFilter").value,
+        country_group: document.getElementById("countryGroupFilter").value,
+        ip_country_name: document.getElementById("ipCountryFilter").value,
+        reg_country_name: document.getElementById("regCountryFilter").value,
+        is_blocked: document.getElementById("isBlockedFilter").value,
+        is_bot: document.getElementById("isBotFilter").value,
+        is_bot_expanded: document.getElementById("isBotExpandedFilter").value,
+        is_arkose_bot: document.getElementById("isArkoseBotFilter").value,
+      };
+      const ahType = document.getElementById("ahTypeFilter").value;
+
+      const rows = filteredRows(mainStart, mainEnd, pack, ahType);
+      const compRows = comparisonRows(compStart, compEnd, pack, ahType);
+      const m = metricSet(rows);
+      const c = compRows.length ? metricSet(compRows) : m;
+      const clmMainRows = clmFunnelRows(mainStart, mainEnd, pack, ahType);
+      const clmCompRows = (compStart && compEnd) ? clmFunnelRows(compStart, compEnd, pack, ahType) : clmMainRows;
+      const sumClm = (rows, field) => rows.reduce((a,b)=>a+Number(b[field]||0),0);
+
+      const clmCompletedSignupMainRaw = sumClm(clmMainRows, "completed_signup_step");
+      const clmConfirmedTcsMain = sumClm(clmMainRows, "confirmed_tcs_step");
+      const clmSubmittedAtLeastOneMain = sumClm(clmMainRows, "requests_submitted_step");
+      const clmSubmittedAllMain = sumClm(clmMainRows, "submitted_all_docs_step");
+      const clmApprovedMain = sumClm(clmMainRows, "approved_accounts");
+      const clmCompletedSignupCompRaw = sumClm(clmCompRows, "completed_signup_step");
+      const clmConfirmedTcsComp = sumClm(clmCompRows, "confirmed_tcs_step");
+
+      // CLM Detailed View alignment: funnel stages come from CLM source fields only.
+      const clmCompletedSignupMain = clmConfirmedTcsMain || clmCompletedSignupMainRaw;
+      const regsMain = clmCompletedSignupMain;
+      const clmCompletedSignupComp = clmConfirmedTcsComp || clmCompletedSignupCompRaw;
+      const regsComp = clmCompletedSignupComp;
+
+      // Dynamic top chips driven by filter selections
+      const mainLabel = (mainStart && mainEnd) ? fmtRange(toDate(mainStart), toDate(mainEnd)) : "All available dates";
+      const compareLabel = (compStart && compEnd)
+        ? `vs. ${fmtRange(toDate(compStart), toDate(compEnd))}`
+        : "No comparison";
+      const activeCount =
+        (mainStart && mainEnd ? 1 : 0) +
+        (compStart && compEnd ? 1 : 0) +
+        (pack.country_business_tier !== "ANY" ? 1 : 0) +
+        (pack.country_group !== "ANY" ? 1 : 0) +
+        (pack.ip_country_name !== "ANY" ? 1 : 0) +
+        (pack.reg_country_name !== "ANY" ? 1 : 0) +
+        (pack.is_blocked !== "ANY" ? 1 : 0) +
+        (pack.is_bot !== "ANY" ? 1 : 0) +
+        (pack.is_bot_expanded !== "ANY" ? 1 : 0) +
+        (pack.is_arkose_bot !== "ANY" ? 1 : 0) +
+        (ahType !== "ALL" ? 1 : 0);
+      document.getElementById("chipMainPeriod").textContent = mainLabel;
+      document.getElementById("chipComparePeriod").textContent = compareLabel;
+      document.getElementById("chipFilters").textContent = `CLM Filters Active (${activeCount})`;
+      document.getElementById("chipDefs").textContent = "Approval + E2E + Post-Approval Definitions Embedded";
+
+      // Top KPI boxes are assigned after review classification sets are built.
+
+      const approvedStageMain = clmApprovedMain;
+      const submittedAtLeastOneStage = clmSubmittedAtLeastOneMain;
+      const submittedAllStage = clmSubmittedAllMain;
+      const stepChangeText = (prev, next, label) => {
+        const safePrev = prev || 0;
+        const safeNext = next || 0;
+        if (!safePrev) return `Drop-off 0.0% vs ${label}`;
+        if (safeNext <= safePrev) return `Drop-off ${(((safePrev - safeNext) / safePrev) * 100).toFixed(1)}% vs ${label}`;
+        return `Increase ${(((safeNext - safePrev) / safePrev) * 100).toFixed(1)}% vs ${label}`;
+      };
+      document.getElementById("funnelRows").innerHTML = [
+        barHTML("Completed Sign-up AHs", regsMain, regsMain || 1, "r", "Baseline stage"),
+        barHTML("Submitted At Least 1 Doc", submittedAtLeastOneStage, regsMain || 1, "o", stepChangeText(regsMain, submittedAtLeastOneStage, "completed sign-up")),
+        barHTML("Submitted All Docs", submittedAllStage, regsMain || 1, "o", stepChangeText(submittedAtLeastOneStage, submittedAllStage, "submitted at least 1 doc")),
+        barHTML("Approved", approvedStageMain, regsMain || 1, "g", stepChangeText(submittedAllStage, approvedStageMain, "submitted all docs"))
+      ].join("");
+
+      document.getElementById("funnelFooter").textContent = `Approval rate on selected scope: ${fmtPct(regsMain ? approvedStageMain / regsMain : 0)} · Completed sign-up AHs: ${fmtInt(regsMain)} · Approved: ${fmtInt(approvedStageMain)}`;
+
+      document.getElementById("alertNoTicket").textContent = fmtInt(m.withoutTicket);
+      document.getElementById("alertConversion").textContent = fmtPct(m.withPs ? m.withTicket / m.withPs : 0);
+      document.getElementById("alertMedianHours").textContent = fmtHours(m.medHours);
+      document.getElementById("alertTicketsClosed").textContent = m.withTicket
+        ? `${fmtInt(m.withTicketClosed)} / ${fmtInt(m.withTicket)} (${fmtPct(m.withTicketClosed / m.withTicket)})`
+        : "n/a";
+
+      // Fully dynamic review/attempt sections by selected registration-date range
+      const autoSignalByAh = {};
+      AUTO_REOPEN_SIGNAL.forEach((x) => { autoSignalByAh[String(x.ah_id || "")] = x; });
+      const attemptSignalByAh = {};
+      ATTEMPT_SIGNAL.forEach((x) => { attemptSignalByAh[String(x.ah_id || "")] = x; });
+      const strictTouchByAh = {};
+      STRICT_TOUCH_SIGNAL.forEach((x) => { strictTouchByAh[String(x.ah_id || "")] = x; });
+      const reviewerSignalByAh = {};
+      REVIEWER_SIGNAL.forEach((x) => { reviewerSignalByAh[String(x.ah_id || "")] = x; });
+      const rowsByAh = {};
+      rows.forEach((r) => { rowsByAh[String(r.ah_id || "")] = r; });
+      const rowsByAhMainDateRange = {};
+      DATA
+        .filter((r) => inDateRange(r.registration_date, mainStart, mainEnd))
+        .forEach((r) => { rowsByAhMainDateRange[String(r.ah_id || "")] = r; });
+      const approvedIds = setFromRows(clmMainRows, (r) => Number(r.approved_accounts || 0) > 0);
+      const submittedAllIds = setFromRows(clmMainRows, (r) => Number(r.submitted_all_docs_step || 0) > 0);
+      const hasAutoReopenSignal = (ah) => {
+        const id = String(ah || "");
+        const sig = autoSignalByAh[id];
+        if (!sig) return false;
+        if (AUTO_REOPEN_EXCLUDE_IDS.has(id)) return false;
+        return Number(sig.has_reopened_event || 0) === 1 && Number(sig.orn_any_cnt || 0) === 0;
+      };
+      const clmAutoReopenIdsForView = new Set(
+        clmMainRows
+          .filter((r) => hasAutoReopenSignal(String(r.ah_id || "")))
+          .map((r) => String(r.ah_id || ""))
+          .filter(Boolean)
+      );
+      const isAutoReopen = (r) => {
+        const ah = String(r.ah_id || "");
+        if (hasAutoReopenSignal(ah)) return true;
+        const firstOutcome = String(r.first_review_outcome || "");
+        const manualTickets = Number(r.manual_ticket_count || 0);
+        return firstOutcome === "Reopened" && manualTickets === 0;
+      };
+
+      const autoApproved1Ids = new Set();
+      const autoApproved2Ids = new Set();
+      const autoApproved3Ids = new Set();
+      const manualApproved1Ids = new Set();
+      const manualApproved2Ids = new Set();
+      const manualApproved3Ids = new Set();
+      const autoApprovedAnyIds = new Set();
+      const manualApprovedAnyIds = new Set();
+      const reopenedResubmittedIds = new Set();
+      const reopenedNoResponseIds = new Set();
+      const autoReopenResubmittedIds = new Set();
+      const autoReopenNoResponseIds = new Set();
+      const blockedIds = new Set();
+      const noFirstReviewEventIds = new Set();
+
+      const autoReopenRowIds = setFromRows(rows, (r) => isAutoReopen(r));
+      const autoReopenIdsCombined = new Set([...autoReopenRowIds, ...clmAutoReopenIdsForView]);
+      const hasResubmittedAfterFirstTouch = (id) => {
+        const sig = attemptSignalByAh[id];
+        const a2 = String((sig && sig.attempt2_outcome) || "").toLowerCase().trim();
+        const a3 = String((sig && sig.attempt3_outcome) || "").toLowerCase().trim();
+        const positiveOutcomes = new Set(["approved", "reopened", "blocked"]);
+        const hasLaterAttempt = positiveOutcomes.has(a2) || positiveOutcomes.has(a3);
+        if (hasLaterAttempt) return true;
+        // Pending/unknown-only signal is not enough to infer resubmission.
+        const autoSig = autoSignalByAh[id];
+        // Strong inferred resubmission only: approved + ORN evidence + approved event.
+        if (
+          approvedIds.has(id) &&
+          autoSig &&
+          Number(autoSig.orn_any_cnt || 0) > 0 &&
+          Number(autoSig.has_approved_event || 0) === 1
+        ) return true;
+        const revSig = reviewerSignalByAh[id];
+        if (
+          approvedIds.has(id) &&
+          autoSig &&
+          Number(autoSig.has_reopened_event || 0) === 1 &&
+          Number(autoSig.has_pending_event || 0) === 1 &&
+          revSig &&
+          Number(revSig.manual_doc_count || 0) > 0
+        ) return true;
+        return false;
+      };
+
+      const firstOutcomeBaseIds = new Set([...submittedAllIds]);
+      firstOutcomeBaseIds.forEach((id) => {
+        const sig = attemptSignalByAh[id];
+        const autoSig = autoSignalByAh[id];
+        const row = rowsByAh[id];
+        const a1 = String((sig && sig.attempt1_outcome) || "").toLowerCase();
+        const a2 = String((sig && sig.attempt2_outcome) || "").toLowerCase();
+        const a3 = String((sig && sig.attempt3_outcome) || "").toLowerCase();
+        const manualCnt = Number((sig && sig.manual_ticket_count) || 0);
+        const isApproved = approvedIds.has(id);
+        const raw = String((row && row.first_review_outcome) || "");
+        const isReopenedSignal =
+          a1 === "reopened" ||
+          raw === "Reopened" ||
+          (autoSig && Number(autoSig.has_reopened_event || 0) === 1);
+        const strict = strictTouchByAh[id];
+        const reviewerSig = reviewerSignalByAh[id];
+        const hasStrict = !!(strict && Number(strict.has_approval_ts || 0) === 1);
+        const reviewerManualEvidence = !!(
+          reviewerSig &&
+          Number(reviewerSig.manual_doc_count || 0) > 0
+        );
+        // Lumen-aligned manual evidence:
+        // manual ORN ticket evidence OR requirement-manager human reviewer evidence.
+        const firstOutcomeLower = raw.trim().toLowerCase();
+        const isSingleTicketUnknownNoReviewer =
+          manualCnt === 1 &&
+          (firstOutcomeLower === "unknown" || firstOutcomeLower === "") &&
+          !reviewerManualEvidence &&
+          !MANUAL_TICKET_WINDOW_OVERRIDES.has(id);
+        const isManualApproval = isSingleTicketUnknownNoReviewer
+          ? false
+          : (
+            MANUAL_TICKET_WINDOW_OVERRIDES.has(id) ||
+            manualCnt > 0 ||
+            reviewerManualEvidence
+          );
+        const explicitManualReopen =
+          a1 === "reopened" ||
+          (raw === "Reopened" && isManualApproval);
+        const isAutoReopenCandidate = autoReopenIdsCombined.has(id) && !explicitManualReopen;
+
+        if (isApproved) {
+          let attempt = 1;
+          if (hasStrict && !isManualApproval) {
+            const b = String(strict.touch_bucket || "");
+            if (b === "2") attempt = 2;
+            else if (b === "3+") attempt = 3;
+            else attempt = 1;
+          } else {
+            // Use explicit attempt outcomes for 2nd/3rd attempt escalation.
+            // Manual ticket count can indicate manual touch, but not necessarily additional attempts.
+            if (a3 === "approved") attempt = 3;
+            else if (a2 === "approved") attempt = 2;
+            else if (a1 === "approved" || manualCnt >= 1) attempt = 1;
+            else if (hasResubmittedAfterFirstTouch(id)) attempt = 2;
+            // First-touch auto-reopen that ended in approval must be at least second attempt.
+            if (isAutoReopenCandidate && attempt < 2) {
+              attempt = 2;
+            }
+            // If first touch was reopened/pending and requirement-manager reviewer evidence is manual,
+            // treat approval as second-touch even when ORN linkage is sparse.
+            if (
+              reviewerManualEvidence &&
+              autoSig &&
+              Number(autoSig.has_reopened_event || 0) === 1 &&
+              Number(autoSig.has_pending_event || 0) === 1 &&
+              attempt < 2
+            ) {
+              attempt = 2;
+            }
+            if (MANUAL_TICKET_WINDOW_OVERRIDES.has(id) && !a2 && !a3 && manualCnt === 0) {
+              attempt = 1;
+            }
+          }
+
+          if (isManualApproval) {
+            manualApprovedAnyIds.add(id);
+            if (attempt >= 3) manualApproved3Ids.add(id);
+            else if (attempt === 2) manualApproved2Ids.add(id);
+            else manualApproved1Ids.add(id);
+          } else {
+            autoApprovedAnyIds.add(id);
+            if (attempt >= 3) autoApproved3Ids.add(id);
+            else if (attempt === 2) autoApproved2Ids.add(id);
+            else autoApproved1Ids.add(id);
+          }
+          // Approval-first: approved customers stay in approved buckets for first-review section.
+          return;
+        }
+
+        if (a1 === "blocked" || raw === "Declined") {
+          blockedIds.add(id);
+          return;
+        }
+
+        if (isAutoReopenCandidate) {
+          if (hasResubmittedAfterFirstTouch(id)) autoReopenResubmittedIds.add(id);
+          else autoReopenNoResponseIds.add(id);
+          return;
+        }
+
+        if (isReopenedSignal) {
+          if (hasResubmittedAfterFirstTouch(id)) reopenedResubmittedIds.add(id);
+          else reopenedNoResponseIds.add(id);
+          return;
+        }
+
+        noFirstReviewEventIds.add(id);
+      });
+
+      const autoApproved1 = autoApproved1Ids.size;
+      const autoApproved2 = autoApproved2Ids.size;
+      const autoApproved3 = autoApproved3Ids.size;
+      const manualApproved1 = manualApproved1Ids.size;
+      const manualApproved2 = manualApproved2Ids.size;
+      const manualApproved3 = manualApproved3Ids.size;
+      const reopenedResubmitted = reopenedResubmittedIds.size;
+      const reopenedNoResponse = reopenedNoResponseIds.size;
+      const autoReopenResubmitted = autoReopenResubmittedIds.size;
+      const autoReopenNoResponse = autoReopenNoResponseIds.size;
+      const blocked = blockedIds.size;
+      const autoApprovedAny = autoApprovedAnyIds.size;
+      const manualApprovedAny = manualApprovedAnyIds.size;
+      const firstOutcomeBase = firstOutcomeBaseIds.size || submittedAllStage || 1;
+      const strictCoverageIds = new Set(
+        [...firstOutcomeBaseIds].filter((id) => {
+          const s = strictTouchByAh[id];
+          return s && Number(s.has_approval_ts || 0) === 1;
+        })
+      );
+      const strictCoverageCount = strictCoverageIds.size;
+      const noFirstReviewEvent = noFirstReviewEventIds.size;
+      const autoApprovedAnyNote = `1st: ${fmtInt(autoApproved1)}, 2nd: ${fmtInt(autoApproved2)}, 3rd+: ${fmtInt(autoApproved3)}`;
+      const manualApprovedAnyNote = `Total manual approved (all attempts): ${fmtInt(manualApprovedAny)}`;
+      const e2eHoursForIds = (ids) => {
+        const vals = [...ids]
+          .map((id) => {
+            const r = rowsByAh[id];
+            if (!r || !r.registration_date || !r.approval_date) return NaN;
+            const startTs = Date.parse(String(r.registration_date));
+            const endTs = Date.parse(String(r.approval_date));
+            if (!Number.isFinite(startTs) || !Number.isFinite(endTs) || endTs < startTs) return NaN;
+            return (endTs - startTs) / 36e5;
+          })
+          .filter((v) => Number.isFinite(v));
+        if (!vals.length) return { avg: 0, p90: 0, count: 0 };
+        const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+        const sorted = [...vals].sort((a, b) => a - b);
+        const idx = Math.max(0, Math.min(sorted.length - 1, Math.floor(0.9 * (sorted.length - 1))));
+        const p90 = sorted[idx];
+        return { avg, p90, count: vals.length };
+      };
+
+      const approvedCustomers = approvedStageMain;
+      const submittedAllCustomers = submittedAllStage;
+      const autoApprovedCustomers = autoApprovedAny;
+      const manualApprovedCustomers = manualApprovedAny;
+      const autoE2E = e2eHoursForIds(autoApprovedAnyIds);
+      const manualE2E = e2eHoursForIds(manualApprovedAnyIds);
+      const ticketAfterApprovalCustomers = [...approvedIds].filter((id) => {
+        const r = rowsByAh[id];
+        return !!(r && r.has_ticket);
+      }).length;
+
+      document.getElementById("kpiApproved").textContent = fmtInt(approvedCustomers);
+      document.getElementById("kpiApprovedDelta").textContent = fmtPct(submittedAllCustomers ? approvedCustomers / submittedAllCustomers : 0);
+
+      document.getElementById("kpiAutoAny").textContent = fmtInt(autoApprovedCustomers);
+      document.getElementById("kpiAutoAnyDelta").textContent = fmtPct(approvedCustomers ? autoApprovedCustomers / approvedCustomers : 0);
+
+      document.getElementById("kpiHours").textContent = fmtDays(autoE2E.avg);
+      document.getElementById("kpiHoursDelta").textContent = `P90: ${fmtDays(autoE2E.p90)}`;
+
+      document.getElementById("kpiWithPs").textContent = fmtInt(manualApprovedCustomers);
+      document.getElementById("kpiWithPsDelta").textContent = fmtPct(approvedCustomers ? manualApprovedCustomers / approvedCustomers : 0);
+
+      document.getElementById("kpiWithoutPs").textContent = fmtDays(manualE2E.avg);
+      document.getElementById("kpiWithoutPsDelta").textContent = `P90: ${fmtDays(manualE2E.p90)}`;
+
+      document.getElementById("kpiWithTicket").textContent = fmtInt(ticketAfterApprovalCustomers);
+      document.getElementById("kpiWithTicketDelta").textContent = fmtPct(approvedCustomers ? ticketAfterApprovalCustomers / approvedCustomers : 0);
+
+      const weekStartFor = (dateStr) => {
+        if (!dateStr) return null;
+        const d = new Date(`${dateStr}T00:00:00`);
+        if (Number.isNaN(d.getTime())) return null;
+        const day = d.getDay(); // Sunday=0 ... Saturday=6
+        const daysFromMonday = (day + 6) % 7;
+        d.setDate(d.getDate() - daysFromMonday);
+        return d.toISOString().slice(0, 10);
+      };
+      const weeklyAggByWeek = {};
+      const approvedClassifiedIds = new Set([...autoApprovedAnyIds, ...manualApprovedAnyIds]);
+      approvedClassifiedIds.forEach((id) => {
+        const r = rowsByAh[id];
+        if (!r || !r.approval_date) return;
+        const wk = weekStartFor(r.approval_date);
+        if (!wk) return;
+        if (!weeklyAggByWeek[wk]) {
+          weeklyAggByWeek[wk] = {
+            approved: 0,
+            manualApproved: 0,
+            firstTouchApproved: 0,
+            withKycTicketPostApproval: 0,
+            manualE2EHoursSum: 0,
+            manualE2ECount: 0,
+          };
+        }
+        const bucket = weeklyAggByWeek[wk];
+        bucket.approved += 1;
+        const isManualApproved = manualApprovedAnyIds.has(id);
+        const isFirstTouchApproved = autoApproved1Ids.has(id) || manualApproved1Ids.has(id);
+        if (isManualApproved) {
+          bucket.manualApproved += 1;
+          if (r.registration_date && r.approval_date) {
+            const startTs = Date.parse(String(r.registration_date));
+            const endTs = Date.parse(String(r.approval_date));
+            if (Number.isFinite(startTs) && Number.isFinite(endTs) && endTs >= startTs) {
+              bucket.manualE2EHoursSum += (endTs - startTs) / 36e5;
+              bucket.manualE2ECount += 1;
+            }
+          }
+        }
+        if (isFirstTouchApproved) bucket.firstTouchApproved += 1;
+        if (r.has_ticket) bucket.withKycTicketPostApproval += 1;
+      });
+      const weeklyTrendRows = Object.entries(weeklyAggByWeek)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .slice(-12);
+      document.getElementById("weeklyTrendMeta").textContent = `Last ${fmtInt(weeklyTrendRows.length)} approval weeks in selected scope.`;
+      const weeklyTrendPoints = weeklyTrendRows.map(([week, v]) => ({
+        week,
+        approved: v.approved,
+        manual_pct: v.approved > 0 ? (v.manualApproved / v.approved) : NaN,
+        manual_e2e_days: v.manualE2ECount > 0 ? (v.manualE2EHoursSum / v.manualE2ECount) / 24 : NaN,
+        first_touch_pct: v.approved > 0 ? (v.firstTouchApproved / v.approved) : NaN,
+        kyc_ticket_pct: v.approved > 0 ? (v.withKycTicketPostApproval / v.approved) : NaN,
+      }));
+      renderWeeklyLineChart("trendManualPctChart", weeklyTrendPoints, "manual_pct", "#3b82f6", "trendManualPctLatest", (v) => fmtPct(v));
+      renderWeeklyLineChart("trendManualE2EChart", weeklyTrendPoints, "manual_e2e_days", "#10b981", "trendManualE2ELatest", (v) => `${v.toFixed(1)}d`);
+      renderWeeklyLineChart("trendFirstTouchChart", weeklyTrendPoints, "first_touch_pct", "#f59e0b", "trendFirstTouchLatest", (v) => fmtPct(v));
+      renderWeeklyLineChart("trendKycTicketChart", weeklyTrendPoints, "kyc_ticket_pct", "#ef4444", "trendKycTicketLatest", (v) => fmtPct(v));
+      document.getElementById("screenBase1").textContent = `Base: ${fmtInt(firstOutcomeBase)} submitted all docs`;
+      document.getElementById("screenRows1").innerHTML = [
+        rowHTMLClickable("Auto Approved (Any Attempt)", autoApprovedAny, firstOutcomeBase, "green", autoApprovedAnyNote, "First Review Outcome", "Auto Approved (Any Attempt)"),
+        rowHTMLClickable("Manually Approved - 1st Attempt", manualApproved1, firstOutcomeBase, "blue", manualApprovedAnyNote, "First Review Outcome", "Manually Approved - 1st Attempt"),
+        rowHTMLClickable("Manually Reopen - Customer Resubmitted", reopenedResubmitted, firstOutcomeBase, "amber", "--", "First Review Outcome", "Manually Reopen - Customer Resubmitted"),
+        rowHTMLClickable("Manually Reopen - No Response", reopenedNoResponse, firstOutcomeBase, "amber", "--", "First Review Outcome", "Manually Reopen - No Response"),
+        rowHTMLClickable("Auto Reopen - Customer Resubmitted", autoReopenResubmitted, firstOutcomeBase, "amber", "Reopened + no ORN manual ticket", "First Review Outcome", "Auto Reopen - Customer Resubmitted"),
+        rowHTMLClickable("Auto Reopen - No Response", autoReopenNoResponse, firstOutcomeBase, "amber", "Reopened + no ORN manual ticket", "First Review Outcome", "Auto Reopen - No Response"),
+        rowHTMLClickable("Blocked (all attempts)", blocked, firstOutcomeBase, "red", "qualification declined; profile blocked", "First Review Outcome", "Blocked (all attempts)"),
+        rowHTMLClickable("Pending - No Clear Status", noFirstReviewEvent, firstOutcomeBase, "gray", "submitted all docs with no clear first-review outcome", "First Review Outcome", "Pending - No Clear Status")
+      ].join("");
+      document.getElementById("screenRows1").onclick = (ev) => {
+        const row = ev.target.closest(".tbl-row.clickable");
+        if (!row) return;
+        window.__investTarget = {
+          section: row.getAttribute("data-invest-section"),
+          metric: row.getAttribute("data-invest-metric"),
+        };
+        __loadData().then(() => { render(); document.getElementById('loadingOverlay').style.display='none'; });
+        const card = document.getElementById("investCard");
+        if (card && card.scrollIntoView) {
+          card.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      };
+
+      const secondAttemptBaseIds = new Set([
+        ...reopenedResubmittedIds,
+        ...autoReopenResubmittedIds
+      ]);
+      const secondApprovedIds = new Set();
+      const secondReopenedIds = new Set();
+      const secondAutoReopenIds = new Set();
+      const secondPendingIds = new Set();
+      const secondBlockedIds = new Set();
+      const secondNoOutcomeIds = new Set();
+      const hasResubmittedAfterSecondTouch = (id) => {
+        const sig = attemptSignalByAh[id];
+        const a3 = String((sig && sig.attempt3_outcome) || "").toLowerCase().trim();
+        const hasThirdAttempt = !!(a3 && a3 !== "unknown");
+        if (hasThirdAttempt) return true;
+        // Fallback when third-attempt event is sparse but manual ticketing count exists.
+        if (approvedIds.has(id) && sig && Number(sig.manual_ticket_count || 0) >= 3) return true;
+        return false;
+      };
+      secondAttemptBaseIds.forEach((id) => {
+        const sig = attemptSignalByAh[id];
+        const a2 = String((sig && sig.attempt2_outcome) || "").toLowerCase();
+        if (a2) {
+          if (a2 === "approved") secondApprovedIds.add(id);
+          else if (a2 === "reopened") {
+            // Same logic as first touch: split manual vs auto reopen by absence of next manual ticket.
+            if (sig && Number(sig.manual_ticket_count || 0) <= 2) secondAutoReopenIds.add(id);
+            else secondReopenedIds.add(id);
+          }
+          else if (a2 === "pending") {
+            // If we already have 3rd-touch evidence, treat second touch as reopened+resubmitted.
+            if (hasResubmittedAfterSecondTouch(id)) {
+              if (sig && Number(sig.manual_ticket_count || 0) <= 2) secondAutoReopenIds.add(id);
+              else secondReopenedIds.add(id);
+            } else {
+              secondPendingIds.add(id);
+            }
+          }
+          else if (a2 === "blocked") secondBlockedIds.add(id);
+          return;
+        }
+        const autoSig = autoSignalByAh[id];
+        if (
+          autoSig &&
+          Number(autoSig.has_reopened_event || 0) === 1 &&
+          Number(autoSig.has_pending_event || 0) === 1 &&
+          approvedIds.has(id) &&
+          Number(autoSig.orn_any_cnt || 0) > 0
+        ) {
+          secondApprovedIds.add(id);
+          return;
+        }
+        if (approvedIds.has(id) && sig && Number(sig.manual_ticket_count || 0) >= 2) {
+          secondApprovedIds.add(id);
+          return;
+        }
+        if (hasResubmittedAfterSecondTouch(id)) {
+          if (sig && Number(sig.manual_ticket_count || 0) <= 2) secondAutoReopenIds.add(id);
+          else secondReopenedIds.add(id);
+          return;
+        }
+        secondNoOutcomeIds.add(id);
+      });
+      const secondReopenedResubmittedIds = new Set(
+        [...secondReopenedIds].filter((id) => hasResubmittedAfterSecondTouch(id))
+      );
+      const secondReopenedNoResponseIds = new Set(
+        [...secondReopenedIds].filter((id) => !hasResubmittedAfterSecondTouch(id))
+      );
+      const secondAutoReopenResubmittedIds = new Set(
+        [...secondAutoReopenIds].filter((id) => hasResubmittedAfterSecondTouch(id))
+      );
+      const secondAutoReopenNoResponseIds = new Set(
+        [...secondAutoReopenIds].filter((id) => !hasResubmittedAfterSecondTouch(id))
+      );
+      const secondBase = secondAttemptBaseIds.size;
+      const secondRows = [
+        ["Manually Approved - 2nd Attempt", manualApproved2Ids.size, "blue"],
+        ["Approved (2nd) - Other", [...secondApprovedIds].filter((id) => secondAttemptBaseIds.has(id) && !manualApproved2Ids.has(id)).length, "green"],
+        ["Manually Reopen - Customer Resubmitted", [...secondReopenedResubmittedIds].filter((id) => secondAttemptBaseIds.has(id)).length, "amber"],
+        ["Manually Reopen - No Response", [...secondReopenedNoResponseIds].filter((id) => secondAttemptBaseIds.has(id)).length, "amber"],
+        ["Auto Reopen - Customer Resubmitted", [...secondAutoReopenResubmittedIds].filter((id) => secondAttemptBaseIds.has(id)).length, "amber"],
+        ["Auto Reopen - No Response", [...secondAutoReopenNoResponseIds].filter((id) => secondAttemptBaseIds.has(id)).length, "amber"],
+        ["Pending - No Clear Status", [...secondPendingIds].filter((id) => secondAttemptBaseIds.has(id)).length + secondNoOutcomeIds.size, "gray"]
+      ];
+      document.getElementById("screenBase2").textContent = `Base: ${fmtInt(secondBase)} resubmitted after first touch`;
+      document.getElementById("screenRows2").innerHTML = secondRows
+        .map((x) => rowHTMLClickable(
+          x[0],
+          x[1],
+          secondBase || 1,
+          x[2],
+          x[0] === "Approved (2nd) - Other"
+            ? "approved on 2nd touch, but evidence is insufficient to classify confidently as manual-only"
+            : "--",
+          "2nd Review Attempt",
+          x[0]
+        ))
+        .join("");
+      document.getElementById("screenRows2").onclick = (ev) => {
+        const row = ev.target.closest(".tbl-row.clickable");
+        if (!row) return;
+        window.__investTarget = {
+          section: row.getAttribute("data-invest-section"),
+          metric: row.getAttribute("data-invest-metric"),
+        };
+        render();
+        const card = document.getElementById("investCard");
+        if (card && card.scrollIntoView) {
+          card.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      };
+
+      const thirdAttemptIds = new Set();
+      const thirdApprovedIds = new Set();
+      const thirdReopenedIds = new Set();
+      const thirdPendingIds = new Set();
+      const thirdBlockedIds = new Set();
+      submittedAllIds.forEach((id) => {
+        const sig = attemptSignalByAh[id];
+        const a3 = String((sig && sig.attempt3_outcome) || "").toLowerCase();
+        if (!a3) return;
+        thirdAttemptIds.add(id);
+        if (a3 === "approved") thirdApprovedIds.add(id);
+        else if (a3 === "reopened") thirdReopenedIds.add(id);
+        else if (a3 === "pending") thirdPendingIds.add(id);
+        else if (a3 === "blocked") thirdBlockedIds.add(id);
+      });
+      // Base must be only customers who resubmitted in second attempt.
+      const thirdAttemptBaseIds = new Set([
+        ...secondReopenedResubmittedIds,
+        ...secondAutoReopenResubmittedIds
+      ]);
+      const thirdNoOutcomeIds = new Set(
+        [...thirdAttemptBaseIds].filter(
+          (id) =>
+            !thirdApprovedIds.has(id) &&
+            !thirdReopenedIds.has(id) &&
+            !thirdPendingIds.has(id) &&
+            !thirdBlockedIds.has(id)
+        )
+      );
+      const thirdBase = thirdAttemptBaseIds.size;
+      const thirdRowsDyn = [
+        ["Manually Approved - 3rd+ Attempt", manualApproved3Ids.size, "blue"],
+        ["Approved", [...thirdApprovedIds].filter((id) => thirdAttemptBaseIds.has(id)).length, "green"],
+        ["Reopen - No Response", [...thirdReopenedIds].filter((id) => thirdAttemptBaseIds.has(id)).length, "amber"],
+        ["Pending Response", [...thirdPendingIds].filter((id) => thirdAttemptBaseIds.has(id)).length + thirdNoOutcomeIds.size, "gray"]
+      ];
+      document.getElementById("screenBase3").textContent = `Base: ${fmtInt(thirdBase)} customers`;
+      document.getElementById("screenRows3").innerHTML = thirdRowsDyn
+        .map((x) => rowHTMLClickable(x[0], x[1], thirdBase || 1, x[2], "--", "3rd or More Attempt", x[0]))
+        .join("");
+      document.getElementById("screenRows3").onclick = (ev) => {
+        const row = ev.target.closest(".tbl-row.clickable");
+        if (!row) return;
+        window.__investTarget = {
+          section: row.getAttribute("data-invest-section"),
+          metric: row.getAttribute("data-invest-metric"),
+        };
+        render();
+        const card = document.getElementById("investCard");
+        if (card && card.scrollIntoView) {
+          card.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      };
+
+      const clmAllRowsByDate = clmFunnelRows(mainStart, mainEnd, pack, ahType);
+      const approvedIdsGlobal = setFromRows(clmAllRowsByDate, (r) => Number(r.approved_accounts || 0) > 0);
+      const triggerRows = TRIGGERS.filter((r) =>
+        inDateRange((r.registration_date || r.approval_date), mainStart, mainEnd) &&
+        matchesFilterProxy(r.country_business_tier, pack.country_business_tier) &&
+        matchesFilterProxy(r.country_group, pack.country_group) &&
+        matchesFilterProxy(r.ip_country_name, pack.ip_country_name) &&
+        matchesFilterProxy(r.reg_country_name, pack.reg_country_name) &&
+        matchesFilterProxy(r.is_blocked, pack.is_blocked) &&
+        matchesFilterProxy(r.is_bot, pack.is_bot) &&
+        matchesFilterProxy(r.is_bot_expanded, pack.is_bot_expanded) &&
+        matchesFilterProxy(r.is_arkose_bot, pack.is_arkose_bot) &&
+        matchesDataAhType(ahType, r.customer_type || "Unknown")
+      );
+      const triggerAh = new Set(triggerRows.map((r) => r.ah_id));
+      const triggerWithTicketAh = new Set(
+        triggerRows.filter((r) => r.has_ticket_after_trigger).map((r) => r.ah_id)
+      );
+      // Top-box metrics are approval-based (not trigger-join dependent):
+      // use ORN-derived post-approval flags from DATA rows.
+      const approvedRowsForPostApproval = [...approvedIdsGlobal]
+        .map((id) => rowsByAhMainDateRange[id])
+        .filter(Boolean);
+      const withReqPostApproval = approvedRowsForPostApproval.filter((r) => !!r.has_ps).length;
+      const withKycTicketPostApproval = approvedRowsForPostApproval.filter((r) => !!r.has_ticket).length;
+      const totalPostApprovalTickets = approvedRowsForPostApproval.reduce(
+        (s, r) => s + Number(r.ticket_count || 0),
+        0
+      );
+      const ticketsPerCustomer = withKycTicketPostApproval
+        ? (totalPostApprovalTickets / withKycTicketPostApproval)
+        : 0;
+      const postApprovalTicketAh = new Set(
+        approvedRowsForPostApproval.filter((r) => !!r.has_ticket).map((r) => String(r.ah_id || ""))
+      );
+      document.getElementById("postApprovalBaseMeta").textContent =
+        `Base: ${fmtInt(approvedIdsGlobal.size)} approved customers (date range)`;
+      document.getElementById("kpiTReqRate").textContent = fmtInt(withReqPostApproval);
+      document.getElementById("kpiTTicketRate").textContent = fmtInt(withKycTicketPostApproval);
+      document.getElementById("kpiTReqCount").textContent = `${fmtPct(approvedIdsGlobal.size ? withReqPostApproval / approvedIdsGlobal.size : 0)} (${fmtInt(withReqPostApproval)} / ${fmtInt(approvedIdsGlobal.size)})`;
+      document.getElementById("kpiTTicketCount").textContent = `${fmtPct(approvedIdsGlobal.size ? withKycTicketPostApproval / approvedIdsGlobal.size : 0)} (${fmtInt(withKycTicketPostApproval)} / ${fmtInt(approvedIdsGlobal.size)})`;
+      document.getElementById("kpiTTicketsPerCustomer").textContent = ticketsPerCustomer.toFixed(2);
+      document.getElementById("kpiTTicketsPerCustomerMeta").textContent = `${fmtInt(totalPostApprovalTickets)} tickets / ${fmtInt(withKycTicketPostApproval)} customers`;
+
+      const byTrigger = {};
+      triggerRows.forEach((r) => {
+        const key = r.requirement_trigger || "Unknown Trigger";
+        if (!byTrigger[key]) byTrigger[key] = { triggerAh: new Set(), ticketAh: new Set(), tickets: 0 };
+        const ah = String(r.ah_id || "");
+        byTrigger[key].triggerAh.add(ah);
+        const hasTicketByTrigger = !!r.has_ticket_after_trigger;
+        const hasTicketFallback = postApprovalTicketAh.has(ah);
+        const hasTicket = hasTicketByTrigger || hasTicketFallback;
+        if (hasTicket) byTrigger[key].ticketAh.add(ah);
+        const ticketCount = Number(r.ticket_count_after_trigger || 0);
+        byTrigger[key].tickets += (ticketCount > 0 ? ticketCount : (hasTicket ? 1 : 0));
+      });
+      const triggerList = Object.entries(byTrigger)
+        .map(([k, v]) => ({
+          trigger: k,
+          customers: v.triggerAh.size,
+          withTicket: v.ticketAh.size,
+          ticketRate: v.triggerAh.size ? (v.ticketAh.size / v.triggerAh.size) : 0,
+          tickets: v.tickets,
+        }))
+        .sort((a, b) => b.tickets - a.tickets);
+      const triggerTicketBase = triggerList.reduce((s, x) => s + x.tickets, 0);
+      const triggerMajor = triggerList.filter((x) => x.tickets > 100);
+      const triggerMinor = triggerList.filter((x) => x.tickets <= 100);
+      const othersTickets = triggerMinor.reduce((s, x) => s + x.tickets, 0);
+      const othersCustomers = triggerMinor.reduce((s, x) => s + x.customers, 0);
+      const othersWithTicket = triggerMinor.reduce((s, x) => s + x.withTicket, 0);
+      const triggerWithTicketAhResolved = new Set(
+        triggerRows
+          .map((r) => String(r.ah_id || ""))
+          .filter((id) => postApprovalTicketAh.has(id) || triggerWithTicketAh.has(id))
+      );
+      document.getElementById("postApprovalDistMeta").textContent =
+        `Note: a customer can appear under multiple triggers, so row counts are not additive to unique ticketed customers (${fmtInt(triggerWithTicketAhResolved.size)}).`;
+      const triggerDisplay = othersTickets > 0
+        ? [...triggerMajor, { trigger: "Others", tickets: othersTickets, ticketRate: othersCustomers ? (othersWithTicket / othersCustomers) : 0 }]
+        : triggerMajor;
+      const triggerTicketIdsByName = {};
+      triggerDisplay.forEach((x) => {
+        if (x.trigger === "Others") {
+          triggerTicketIdsByName[x.trigger] = new Set(
+            triggerMinor.flatMap((m) => [...(byTrigger[m.trigger]?.ticketAh || [])])
+          );
+        } else {
+          triggerTicketIdsByName[x.trigger] = new Set([...(byTrigger[x.trigger]?.ticketAh || [])]);
+        }
+      });
+      document.getElementById("kycReasonRows").innerHTML = triggerDisplay.length
+        ? triggerDisplay.map((x) =>
+            `<div class="tbl-row clickable" data-invest-section="Post-Approval Requirements & Tickets" data-invest-metric="Trigger: ${x.trigger}"><div class="lbl"><span class="dot red"></span>${x.trigger}</div><div class="num">${fmtInt(x.tickets)}</div><div class="pct">${fmtPct(triggerTicketBase ? x.tickets / triggerTicketBase : 0)}</div><div class="delta">${fmtPct(x.ticketRate)} ticket-rate</div></div>`
+          ).join("")
+        : `<div class="tbl-row"><div class="lbl"><span class="dot gray"></span>No triggers in selected range</div><div class="num">0</div><div class="pct">0%</div><div class="delta">--</div></div>`;
+      const selectedPostTrigger = String(window.__postApprovalTrigger || "");
+      const selectedIds = selectedPostTrigger && triggerTicketIdsByName[selectedPostTrigger]
+        ? uniqueSorted([...(triggerTicketIdsByName[selectedPostTrigger] || [])])
+        : [];
+      if (selectedPostTrigger && selectedIds.length) {
+        const previewIds = selectedIds.slice(0, 15);
+        const extra = selectedIds.length > previewIds.length ? selectedIds.length - previewIds.length : 0;
+        document.getElementById("kycRegionRows").innerHTML = [
+          `Selected trigger: ${selectedPostTrigger}`,
+          `Customers with ticket: ${fmtInt(selectedIds.length)}`,
+          ...previewIds.map((id) => `AH ${id}`),
+          ...(extra ? [`... +${fmtInt(extra)} more`] : []),
+          `Tip: use Customer Investigation panel for full list`
+        ].map((x) => `<div class="tbl-row"><div class="lbl"><span class="dot blue"></span>${x}</div><div class="num"></div><div class="pct"></div><div class="delta"></div></div>`).join("");
+      } else {
+        document.getElementById("kycRegionRows").innerHTML = [
+          `Selected requirements: ${fmtInt(triggerRows.length)}`,
+          `Unique customers with requirements: ${fmtInt(triggerAh.size)}`,
+          `Unique customers with ticket after trigger: ${fmtInt(triggerWithTicketAhResolved.size)}`,
+          `Click a trigger row to view customer list`
+        ].map((x) => `<div class="tbl-row"><div class="lbl"><span class="dot blue"></span>${x}</div><div class="num"></div><div class="pct"></div><div class="delta"></div></div>`).join("");
+      }
+      document.getElementById("kycReasonRows").onclick = (ev) => {
+        const row = ev.target.closest(".tbl-row.clickable");
+        if (!row) return;
+        const metric = row.getAttribute("data-invest-metric");
+        const triggerName = String(metric || "").replace(/^Trigger:\s*/, "");
+        window.__postApprovalTrigger = triggerName || "";
+        window.__investTarget = {
+          section: row.getAttribute("data-invest-section"),
+          metric,
+        };
+        render();
+      };
+
+      const ornBeforeApprovalIds = setFromRows(rows, (r) => !!r.has_orn_ticket_before_approval);
+      const withOrnTsBeforeApprovalIds = setFromRows(
+        rows,
+        (r) => !!r.first_orn_ticket_ts_before_approval
+      );
+      document.getElementById("definitionsRows").innerHTML = [
+        {
+          label: "Source of truth: memory/DASHBOARD_DEFINITIONS.md",
+          num: "Embedded",
+          pct: "--",
+          delta: "single definitions catalog"
+        },
+        {
+          label: "Approval timestamp anchor priority: FDC account-approval GO -> ORN auto-log fallback -> AH_KYC=25 fallback",
+          num: "Embedded",
+          pct: "--",
+          delta: "Applied in extraction"
+        },
+        {
+          label: "E2E start anchor: qualification auto-log start (not plain registration date)",
+          num: "Embedded",
+          pct: "--",
+          delta: "Used for E2E logic"
+        },
+        {
+          label: "Definition calibration: validated first on AH 101313404, then generalized",
+          num: "Embedded",
+          pct: "--",
+          delta: "Case-to-population rollout"
+        },
+        {
+          label: `Manual approval classification is not gated by AH_KYC=25 (window rule: ORN ticket updated within ${MANUAL_TICKET_WINDOW_HOURS}h after approval log counts as manual evidence)`,
+          num: "Embedded",
+          pct: "--",
+          delta: "ticket/review evidence based"
+        },
+        {
+          label: "Strict ORN approval-touch definition coverage on current first-review base",
+          num: fmtInt(strictCoverageCount),
+          pct: fmtPct(firstOutcomeBase ? strictCoverageCount / firstOutcomeBase : 0),
+          delta: "strict cohort share"
+        },
+        {
+          label: "Post-approval requirement scope: all triggers opened within 30 days after approval",
+          num: fmtInt(triggerRows.length),
+          pct: "events",
+          delta: "Trigger distribution active"
+        },
+        {
+          label: "Review coverage field embedded: has ORN ticket before approval",
+          num: fmtInt(ornBeforeApprovalIds.size),
+          pct: fmtPct(rows.length ? ornBeforeApprovalIds.size / rows.length : 0),
+          delta: "customer coverage"
+        },
+        {
+          label: "Review coverage fields embedded: ORN ticket count + first ORN ticket timestamp before approval",
+          num: fmtInt(withOrnTsBeforeApprovalIds.size),
+          pct: fmtPct(rows.length ? withOrnTsBeforeApprovalIds.size / rows.length : 0),
+          delta: "timestamp coverage"
+        }
+      ].map((x) => `<div class="tbl-row"><div class="lbl"><span class="dot blue"></span>${x.label}</div><div class="num">${x.num}</div><div class="pct">${x.pct}</div><div class="delta">${x.delta}</div></div>`).join("");
+
+      // Investigation drill-down catalog (AH IDs under active filters)
+      const completedSignUpIds = setFromRows(clmMainRows, (r) => Number(r.completed_signup_step || 0) > 0);
+      const submittedAtLeastOneIds = setFromRows(clmMainRows, (r) => Number(r.requests_submitted_step || 0) > 0);
+      const clmAutoReopenIds = clmAutoReopenIdsForView;
+      const autoReopenIds = autoReopenIdsCombined;
+
+      const drillCatalog = [
+        { section: "Funnel", metric: "Completed Sign-up AHs", ids: completedSignUpIds },
+        { section: "Funnel", metric: "Submitted At Least 1 Doc", ids: submittedAtLeastOneIds },
+        { section: "Funnel", metric: "Submitted All Docs", ids: submittedAllIds },
+        { section: "Funnel", metric: "Approved", ids: approvedIds },
+        { section: "First Review Outcome", metric: "Auto Approved (Any Attempt)", ids: autoApprovedAnyIds },
+        { section: "First Review Outcome", metric: "Manually Approved - 1st Attempt", ids: manualApproved1Ids, note: manualApprovedAnyNote },
+        { section: "First Review Outcome", metric: "Manually Reopen - Customer Resubmitted", ids: reopenedResubmittedIds },
+        { section: "First Review Outcome", metric: "Manually Reopen - No Response", ids: reopenedNoResponseIds },
+        { section: "First Review Outcome", metric: "Auto Reopen - Customer Resubmitted", ids: autoReopenResubmittedIds, note: "Reopened + no ORN manual ticket" },
+        { section: "First Review Outcome", metric: "Auto Reopen - No Response", ids: autoReopenNoResponseIds, note: "Reopened + no ORN manual ticket" },
+        { section: "First Review Outcome", metric: "Blocked", ids: blockedIds },
+        { section: "First Review Outcome", metric: "Pending - No Clear Status", ids: noFirstReviewEventIds, note: "submitted all docs minus represented first outcomes" },
+        { section: "2nd Review Attempt", metric: "Manually Approved - 2nd Attempt", ids: manualApproved2Ids },
+        { section: "2nd Review Attempt", metric: "Approved (2nd) - Other", ids: new Set([...secondApprovedIds].filter((id) => secondAttemptBaseIds.has(id) && !manualApproved2Ids.has(id))), note: "approved on 2nd touch, but evidence is insufficient to classify confidently as manual-only" },
+        { section: "2nd Review Attempt", metric: "Manually Reopen - Customer Resubmitted", ids: new Set([...secondReopenedResubmittedIds].filter((id) => secondAttemptBaseIds.has(id))) },
+        { section: "2nd Review Attempt", metric: "Manually Reopen - No Response", ids: new Set([...secondReopenedNoResponseIds].filter((id) => secondAttemptBaseIds.has(id))) },
+        { section: "2nd Review Attempt", metric: "Auto Reopen - Customer Resubmitted", ids: new Set([...secondAutoReopenResubmittedIds].filter((id) => secondAttemptBaseIds.has(id))) },
+        { section: "2nd Review Attempt", metric: "Auto Reopen - No Response", ids: new Set([...secondAutoReopenNoResponseIds].filter((id) => secondAttemptBaseIds.has(id))) },
+        { section: "2nd Review Attempt", metric: "Pending - No Clear Status", ids: new Set([...secondPendingIds, ...secondNoOutcomeIds]) },
+        { section: "3rd or More Attempt", metric: "Manually Approved - 3rd+ Attempt", ids: manualApproved3Ids, note: manualApprovedAnyNote },
+        { section: "3rd or More Attempt", metric: "Approved", ids: new Set([...thirdApprovedIds].filter((id) => thirdAttemptBaseIds.has(id))) },
+        { section: "3rd or More Attempt", metric: "Reopen - No Response", ids: new Set([...thirdReopenedIds].filter((id) => thirdAttemptBaseIds.has(id))) },
+        { section: "3rd or More Attempt", metric: "Pending Response", ids: new Set([...thirdPendingIds, ...thirdNoOutcomeIds]) },
+        { section: "Post-Approval Requirements & Tickets", metric: "Has Any Requirement Trigger", ids: new Set(triggerAh) },
+        { section: "Post-Approval Requirements & Tickets", metric: "Has Ticket After Trigger", ids: new Set(triggerWithTicketAh) },
+        ...triggerDisplay.map((x) => ({
+          section: "Post-Approval Requirements & Tickets",
+          metric: `Trigger: ${x.trigger}`,
+          ids: triggerTicketIdsByName[x.trigger] || new Set(),
+          note: "customers with ticket for this trigger group",
+        })),
+      ];
+      renderInvestigationPanel(drillCatalog);
+    }
+
+    function init() {
+      document.getElementById("lastUpdated").textContent = `Last updated: ${new Date().toLocaleString()}`;
+      document.getElementById("chipSourceTs").textContent = "All sections are filtered by selected registration-date range and the same CLM filter pack.";
+      const mainStartInput = document.getElementById("mainStart");
+      const mainEndInput = document.getElementById("mainEnd");
+      const compStartInput = document.getElementById("compStart");
+      const compEndInput = document.getElementById("compEnd");
+      const countryBusinessTierSel = document.getElementById("countryBusinessTierFilter");
+      const countryGroupSel = document.getElementById("countryGroupFilter");
+      const ipCountrySel = document.getElementById("ipCountryFilter");
+      const regCountrySel = document.getElementById("regCountryFilter");
+      const ahTypeSel = document.getElementById("ahTypeFilter");
+      const isBlockedSel = document.getElementById("isBlockedFilter");
+      const isBotSel = document.getElementById("isBotFilter");
+      const isBotExpandedSel = document.getElementById("isBotExpandedFilter");
+      const isArkoseBotSel = document.getElementById("isArkoseBotFilter");
+      const investSectionSel = document.getElementById("investSection");
+      const investMetricSel = document.getElementById("investMetric");
+
+      const dates = [...new Set(DATA.map(r => r.registration_date).filter(Boolean))].sort();
+      if (dates.length) {
+        const minDate = dates[0];
+        const maxDate = dates[dates.length - 1];
+        [mainStartInput, mainEndInput, compStartInput, compEndInput].forEach((el) => {
+          el.min = minDate;
+          el.max = maxDate;
+        });
+      }
+
+      // Default main range = CLM screenshot benchmark window where available.
+      const now = new Date();
+      const firstPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastPrev = new Date(now.getFullYear(), now.getMonth(), 0);
+      const toIso = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      };
+      const prevStart = toIso(firstPrev);
+      const prevEnd = toIso(lastPrev);
+      const clmStart = "2026-02-01";
+      const clmEnd = "2026-02-28";
+      const canUseClmDefault = !dates.length || (clmStart >= dates[0] && clmEnd <= dates[dates.length - 1]);
+      mainStartInput.value = canUseClmDefault ? clmStart : prevStart;
+      mainEndInput.value = canUseClmDefault ? clmEnd : prevEnd;
+      compStartInput.value = "";
+      compEndInput.value = "";
+
+      const mkOpts = (vals, extras = []) => `<option value="ANY">is any value</option>${extras.join("")}${vals.map((v) => `<option value="${v}">${v}</option>`).join("")}`;
+      const uniqueVals = (key) => [...new Set(DATA.map((r) => String(r[key] ?? "Unknown")))].sort();
+      const uniqueClmVals = (key) => [...new Set(CLM_WEEKLY.map((r) => String(r[key] ?? "Unknown")))].sort();
+      const mergedVals = (keyData, keyClm) => [...new Set([...uniqueVals(keyData), ...uniqueClmVals(keyClm)])].filter(Boolean).sort();
+      countryBusinessTierSel.innerHTML = mkOpts(mergedVals("country_business_tier", "country_business_tier"));
+      countryGroupSel.innerHTML = mkOpts(
+        mergedVals("country_group", "country_group"),
+        [`<option value="NOT_IN_ROLLOUT">is not in Rollout</option>`]
+      );
+      ipCountrySel.innerHTML = mkOpts(mergedVals("ip_country_name", "ip_country_name"));
+      regCountrySel.innerHTML = mkOpts(mergedVals("reg_country_name", "reg_country_name"));
+
+      const baseTypes = ["Individual", "Sole Proprietor", "Company"];
+      const dataTypes = [...new Set(DATA.map(r => String(r.customer_type || "Unknown")))].sort();
+      const clmTypes = [...new Set(CLM_WEEKLY.map(r => String(r.ah_type || "Unknown")))].sort();
+      const mergedTypes = [...new Set([...baseTypes, ...dataTypes, ...clmTypes])].filter(Boolean);
+      ahTypeSel.innerHTML = `<option value="ALL">All AH Types</option><option value="CISP">is Company or Individual or Sole proprietor</option>${mergedTypes.map((t) => `<option value="${t}">${t}</option>`).join("")}`;
+
+      isBlockedSel.innerHTML = `<option value="ANY">is any value</option><option value="0" selected>0</option><option value="1">1</option>`;
+      isBotSel.innerHTML = `<option value="ANY">is any value</option><option value="0" selected>0</option><option value="1">1</option>`;
+      isBotExpandedSel.innerHTML = `<option value="ANY">is any value</option><option value="0" selected>0</option><option value="1">1</option>`;
+      isArkoseBotSel.innerHTML = `<option value="ANY" selected>any value</option>`;
+      countryGroupSel.value = "NOT_IN_ROLLOUT";
+      ahTypeSel.value = "CISP";
+      isBlockedSel.value = "0";
+      isBotSel.value = "0";
+      isBotExpandedSel.value = "0";
+      isArkoseBotSel.value = "ANY";
+
+      [
+        mainStartInput, mainEndInput, compStartInput, compEndInput,
+        countryBusinessTierSel, countryGroupSel, ipCountrySel, regCountrySel,
+        ahTypeSel, isBlockedSel, isBotSel, isBotExpandedSel, isArkoseBotSel
+      ].forEach((el) => {
+        el.addEventListener("change", render);
+        el.addEventListener("input", render);
+      });
+      [investSectionSel, investMetricSel].forEach((el) =>
+        el.addEventListener("change", render)
+      );
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
