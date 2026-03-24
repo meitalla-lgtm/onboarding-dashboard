@@ -255,7 +255,7 @@
         manual_doc_count: r[3], non_allowed_reviewers: r[4]
       }));
       FC_SIGNAL = (d.FC_SIGNAL || []).map((r) => ({
-        ah_id: r[0], max_uploads: r[1], has_human: r[2]
+        ah_id: r[0], max_uploads: r[1], has_human: r[2], first_reject_auto: r[3] || 0
       }));
     }
 
@@ -662,9 +662,13 @@
         const sig = autoSignalByAh[id];
         if (!sig) return false;
         if (AUTO_REOPEN_EXCLUDE_IDS.has(id)) return false;
-        return Number(sig.has_reopened_event || 0) === 1 &&
-               Number(sig.has_pending_event || 0) === 1 &&
-               Number(sig.orn_any_cnt || 0) === 0;
+        const reopened = Number(sig.has_reopened_event || 0) === 1;
+        const pending = Number(sig.has_pending_event || 0) === 1;
+        if (!reopened || !pending) return false;
+        const noOrn = Number(sig.orn_any_cnt || 0) === 0;
+        if (noOrn) return true;
+        const fc = fcSignalByAh[id];
+        return !!(fc && Number(fc.first_reject_auto || 0) === 1);
       };
       const reopenNoTicketIds = new Set(
         clmMainRows
@@ -787,9 +791,10 @@
             strictManualEvidence ||
             fcHumanEvidence
           );
+        const fcAutoReject = !!(fc && Number(fc.first_reject_auto || 0) === 1);
         const explicitManualReopen =
-          a1 === "reopened" ||
-          (raw === "Reopened" && isManualApproval);
+          (a1 === "reopened" && !fcAutoReject) ||
+          (raw === "Reopened" && isManualApproval && !fcAutoReject);
         const isAutoReopenCandidate = autoReopenIdsCombined.has(id) && !explicitManualReopen;
 
         if (isApproved) {
