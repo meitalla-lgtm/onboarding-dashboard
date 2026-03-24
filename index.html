@@ -805,7 +805,7 @@
           const effectiveManual = hasStrict
             ? (strict.strict_class === "manual" || reviewerManualEvidence || fcHumanEvidence)
             : isManualApproval;
-          if (hasStrict && !effectiveManual) {
+          if (hasStrict) {
             const b = String(strict.touch_bucket || "");
             if (b === "2") attempt = 2;
             else if (b === "3+") attempt = 3;
