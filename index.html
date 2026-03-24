@@ -252,6 +252,9 @@
         ah_id: r[0], approved_doc_count: r[1], allowed_auto_doc_count: r[2],
         manual_doc_count: r[3], non_allowed_reviewers: r[4]
       }));
+      FC_SIGNAL = (d.FC_SIGNAL || []).map((r) => ({
+        ah_id: r[0], max_uploads: r[1], has_human: r[2]
+      }));
     }
 
     let DATA = null;
@@ -261,6 +264,7 @@
     let ATTEMPT_SIGNAL = null;
     let STRICT_TOUCH_SIGNAL = null;
     let REVIEWER_SIGNAL = null;
+    let FC_SIGNAL = null;
     let ATTEMPTS_WEEKLY = null;
     let TRIGGERS = null;
     const MANUAL_TICKET_WINDOW_HOURS = 2;
@@ -639,6 +643,8 @@
       STRICT_TOUCH_SIGNAL.forEach((x) => { strictTouchByAh[String(x.ah_id || "")] = x; });
       const reviewerSignalByAh = {};
       REVIEWER_SIGNAL.forEach((x) => { reviewerSignalByAh[String(x.ah_id || "")] = x; });
+      const fcSignalByAh = {};
+      (FC_SIGNAL || []).forEach((x) => { fcSignalByAh[String(x.ah_id || "")] = x; });
       const rowsByAh = {};
       rows.forEach((r) => { rowsByAh[String(r.ah_id || "")] = r; });
       const rowsByAhMainDateRange = {};
@@ -692,9 +698,9 @@
         const positiveOutcomes = new Set(["approved", "reopened", "blocked"]);
         const hasLaterAttempt = positiveOutcomes.has(a2) || positiveOutcomes.has(a3);
         if (hasLaterAttempt) return true;
-        // Pending/unknown-only signal is not enough to infer resubmission.
+        const fc = fcSignalByAh[id];
+        if (fc && Number(fc.max_uploads || 0) >= 2) return true;
         const autoSig = autoSignalByAh[id];
-        // Strong inferred resubmission only: approved + ORN evidence + approved event.
         if (
           approvedIds.has(id) &&
           autoSig &&
@@ -730,6 +736,7 @@
           (autoSig && Number(autoSig.has_reopened_event || 0) === 1);
         const strict = strictTouchByAh[id];
         const reviewerSig = reviewerSignalByAh[id];
+        const fc = fcSignalByAh[id];
         const hasStrict = !!(strict && Number(strict.has_approval_ts || 0) === 1);
         const reviewerManualEvidence = !!(
           reviewerSig &&
@@ -740,6 +747,7 @@
           Number(strict.has_approval_ts || 0) === 1 &&
           strict.strict_class === "manual"
         );
+        const fcHumanEvidence = !!(fc && Number(fc.has_human || 0) === 1);
         const firstOutcomeLower = raw.trim().toLowerCase();
         const hasLinkedOrnTicket = !!(autoSig && Number(autoSig.orn_any_cnt || 0) > 0);
         const isSingleTicketUnknownNoReviewer =
@@ -747,6 +755,7 @@
           (firstOutcomeLower === "unknown" || firstOutcomeLower === "") &&
           !reviewerManualEvidence &&
           !strictManualEvidence &&
+          !fcHumanEvidence &&
           !MANUAL_TICKET_WINDOW_OVERRIDES.has(id) &&
           !hasLinkedOrnTicket;
         const isManualApproval = isSingleTicketUnknownNoReviewer
@@ -755,7 +764,8 @@
             MANUAL_TICKET_WINDOW_OVERRIDES.has(id) ||
             manualCnt > 0 ||
             reviewerManualEvidence ||
-            strictManualEvidence
+            strictManualEvidence ||
+            fcHumanEvidence
           );
         const explicitManualReopen =
           a1 === "reopened" ||
@@ -764,24 +774,22 @@
 
         if (isApproved) {
           let attempt = 1;
+          const fcMax = fc ? Number(fc.max_uploads || 0) : 0;
           if (hasStrict && !isManualApproval) {
             const b = String(strict.touch_bucket || "");
             if (b === "2") attempt = 2;
             else if (b === "3+") attempt = 3;
             else attempt = 1;
           } else {
-            // Use explicit attempt outcomes for 2nd/3rd attempt escalation.
-            // Manual ticket count can indicate manual touch, but not necessarily additional attempts.
             if (a3 === "approved") attempt = 3;
             else if (a2 === "approved") attempt = 2;
+            else if (fcMax >= 3) attempt = 3;
+            else if (fcMax === 2) attempt = 2;
             else if (a1 === "approved" || manualCnt >= 1) attempt = 1;
             else if (hasResubmittedAfterFirstTouch(id)) attempt = 2;
-            // First-touch auto-reopen that ended in approval must be at least second attempt.
             if (isAutoReopenCandidate && attempt < 2) {
               attempt = 2;
             }
-            // If first touch was reopened/pending and requirement-manager reviewer evidence is manual,
-            // treat approval as second-touch even when ORN linkage is sparse.
             if (
               reviewerManualEvidence &&
               autoSig &&
@@ -1003,7 +1011,8 @@
         const a3 = String((sig && sig.attempt3_outcome) || "").toLowerCase().trim();
         const hasThirdAttempt = !!(a3 && a3 !== "unknown");
         if (hasThirdAttempt) return true;
-        // Fallback when third-attempt event is sparse but manual ticketing count exists.
+        const fc = fcSignalByAh[id];
+        if (fc && Number(fc.max_uploads || 0) >= 3) return true;
         if (approvedIds.has(id) && sig && Number(sig.manual_ticket_count || 0) >= 3) return true;
         return false;
       };
