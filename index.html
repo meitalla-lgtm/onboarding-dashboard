@@ -195,8 +195,8 @@
     </div>
 
     <div class="card" style="margin-top:12px;">
-      <div class="h3">Weekly Trends (Approval Week)</div>
-      <div class="small" id="weeklyTrendMeta">Last 12 weeks in selected scope.</div>
+      <div class="h3">Weekly Trends (Registration Cohort)</div>
+      <div class="small" id="weeklyTrendMeta">Last 12 registration-week cohorts in selected scope.</div>
       <div class="trend-grid">
         <div class="trend-chart">
           <div class="trend-head"><div class="trend-title">% Manual Approved / Approved</div><div class="trend-latest" id="trendManualPctLatest">--</div></div>
@@ -943,13 +943,14 @@
       };
       const weeklyAggByWeek = {};
       const approvedClassifiedIds = new Set([...autoApprovedAnyIds, ...manualApprovedAnyIds]);
-      approvedClassifiedIds.forEach((id) => {
+      firstOutcomeBaseIds.forEach((id) => {
         const r = rowsByAh[id];
-        if (!r || !r.approval_date) return;
-        const wk = weekStartFor(r.approval_date);
+        if (!r || !r.registration_date) return;
+        const wk = weekStartFor(r.registration_date);
         if (!wk) return;
         if (!weeklyAggByWeek[wk]) {
           weeklyAggByWeek[wk] = {
+            submitted: 0,
             approved: 0,
             manualApproved: 0,
             firstTouchApproved: 0,
@@ -958,6 +959,8 @@
           };
         }
         const bucket = weeklyAggByWeek[wk];
+        bucket.submitted += 1;
+        if (!approvedClassifiedIds.has(id)) return;
         bucket.approved += 1;
         const isManualApproved = manualApprovedAnyIds.has(id);
         const isFirstTouchApproved = autoApproved1Ids.has(id) || manualApproved1Ids.has(id);
@@ -977,7 +980,7 @@
       const weeklyTrendRows = Object.entries(weeklyAggByWeek)
         .sort((a, b) => a[0].localeCompare(b[0]))
         .slice(-12);
-      document.getElementById("weeklyTrendMeta").textContent = `Last ${fmtInt(weeklyTrendRows.length)} approval weeks in selected scope.`;
+      document.getElementById("weeklyTrendMeta").textContent = `Last ${fmtInt(weeklyTrendRows.length)} registration-week cohorts in selected scope.`;
       const medianOf = (arr) => {
         if (!arr.length) return NaN;
         const s = [...arr].sort((a, b) => a - b);
