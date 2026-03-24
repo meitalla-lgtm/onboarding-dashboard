@@ -1055,19 +1055,9 @@
         const a2 = String((sig && sig.attempt2_outcome) || "").toLowerCase();
         if (a2) {
           if (a2 === "approved") secondApprovedIds.add(id);
-          else if (a2 === "reopened") {
-            // Same logic as first touch: split manual vs auto reopen by absence of next manual ticket.
+          else if (a2 === "reopened" || a2 === "pending") {
             if (sig && Number(sig.manual_ticket_count || 0) <= 2) secondAutoReopenIds.add(id);
             else secondReopenedIds.add(id);
-          }
-          else if (a2 === "pending") {
-            // If we already have 3rd-touch evidence, treat second touch as reopened+resubmitted.
-            if (hasResubmittedAfterSecondTouch(id)) {
-              if (sig && Number(sig.manual_ticket_count || 0) <= 2) secondAutoReopenIds.add(id);
-              else secondReopenedIds.add(id);
-            } else {
-              secondPendingIds.add(id);
-            }
           }
           else if (a2 === "blocked") secondBlockedIds.add(id);
           return;
