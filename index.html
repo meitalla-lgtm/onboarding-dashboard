@@ -1048,9 +1048,7 @@
 
       const secondAttemptBaseIds = new Set([
         ...reopenedResubmittedIds,
-        ...autoReopenResubmittedIds,
-        ...manualApproved2Ids,
-        ...autoApproved2Ids
+        ...autoReopenResubmittedIds
       ]);
       const secondApprovedIds = new Set();
       const secondReopenedIds = new Set();
@@ -1170,9 +1168,7 @@
       // Base must be only customers who resubmitted in second attempt.
       const thirdAttemptBaseIds = new Set([
         ...secondReopenedResubmittedIds,
-        ...secondAutoReopenResubmittedIds,
-        ...manualApproved3Ids,
-        ...autoApproved3Ids
+        ...secondAutoReopenResubmittedIds
       ]);
       const thirdNoOutcomeIds = new Set(
         [...thirdAttemptBaseIds].filter(
