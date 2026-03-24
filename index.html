@@ -664,7 +664,7 @@
         if (AUTO_REOPEN_EXCLUDE_IDS.has(id)) return false;
         const reopened = Number(sig.has_reopened_event || 0) === 1;
         const pending = Number(sig.has_pending_event || 0) === 1;
-        if (!reopened || !pending) return false;
+        if (!reopened && !pending) return false;
         const noOrn = Number(sig.orn_any_cnt || 0) === 0;
         if (noOrn) return true;
         const fc = fcSignalByAh[id];
@@ -756,8 +756,10 @@
         const raw = String((row && row.first_review_outcome) || "");
         const isReopenedSignal =
           a1 === "reopened" ||
+          a1 === "pending" ||
           raw === "Reopened" ||
-          (autoSig && Number(autoSig.has_reopened_event || 0) === 1);
+          (autoSig && Number(autoSig.has_reopened_event || 0) === 1) ||
+          (autoSig && Number(autoSig.has_pending_event || 0) === 1);
         const strict = strictTouchByAh[id];
         const reviewerSig = reviewerSignalByAh[id];
         const fc = fcSignalByAh[id];
