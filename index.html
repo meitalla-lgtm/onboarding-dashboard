@@ -802,7 +802,10 @@
         if (isApproved) {
           let attempt = 1;
           const fcMax = fc ? Number(fc.max_uploads || 0) : 0;
-          if (hasStrict && !isManualApproval) {
+          const effectiveManual = hasStrict
+            ? (strict.strict_class === "manual" || reviewerManualEvidence || fcHumanEvidence)
+            : isManualApproval;
+          if (hasStrict && !effectiveManual) {
             const b = String(strict.touch_bucket || "");
             if (b === "2") attempt = 2;
             else if (b === "3+") attempt = 3;
@@ -834,7 +837,7 @@
             }
           }
 
-          if (isManualApproval) {
+          if (effectiveManual) {
             manualApprovedAnyIds.add(id);
             if (attempt >= 3) manualApproved3Ids.add(id);
             else if (attempt === 2) manualApproved2Ids.add(id);
