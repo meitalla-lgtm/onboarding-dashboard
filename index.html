@@ -195,7 +195,7 @@
     </div>
 
     <div class="card" style="margin-top:12px;">
-      <div class="h3">Weekly Trends (Registration Cohort)</div>
+      <div class="h3">Weekly Trends (Registration Cohort, 14-day window)</div>
       <div class="small" id="weeklyTrendMeta">Last 12 registration-week cohorts in selected scope.</div>
       <div class="trend-grid">
         <div class="trend-chart">
@@ -941,6 +941,7 @@
         d.setDate(d.getDate() - daysFromMonday);
         return d.toISOString().slice(0, 10);
       };
+      const COHORT_WINDOW_DAYS = 14;
       const weeklyAggByWeek = {};
       const approvedClassifiedIds = new Set([...autoApprovedAnyIds, ...manualApprovedAnyIds]);
       firstOutcomeBaseIds.forEach((id) => {
@@ -948,6 +949,9 @@
         if (!r || !r.registration_date) return;
         const wk = weekStartFor(r.registration_date);
         if (!wk) return;
+        const regTs = Date.parse(String(r.registration_date));
+        if (!Number.isFinite(regTs)) return;
+        const windowEnd = regTs + COHORT_WINDOW_DAYS * 864e5;
         if (!weeklyAggByWeek[wk]) {
           weeklyAggByWeek[wk] = {
             submitted: 0,
@@ -961,18 +965,15 @@
         const bucket = weeklyAggByWeek[wk];
         bucket.submitted += 1;
         if (!approvedClassifiedIds.has(id)) return;
+        const apprTs = r.approval_date ? Date.parse(String(r.approval_date)) : NaN;
+        if (!Number.isFinite(apprTs) || apprTs > windowEnd) return;
         bucket.approved += 1;
         const isManualApproved = manualApprovedAnyIds.has(id);
         const isFirstTouchApproved = autoApproved1Ids.has(id) || manualApproved1Ids.has(id);
         if (isManualApproved) {
           bucket.manualApproved += 1;
-          if (r.registration_date && r.approval_date) {
-            const startTs = Date.parse(String(r.registration_date));
-            const endTs = Date.parse(String(r.approval_date));
-            if (Number.isFinite(startTs) && Number.isFinite(endTs) && endTs >= startTs) {
-              bucket.manualE2EHoursVals.push((endTs - startTs) / 36e5);
-            }
-          }
+          const e2eHours = (apprTs - regTs) / 36e5;
+          if (e2eHours >= 0) bucket.manualE2EHoursVals.push(e2eHours);
         }
         if (isFirstTouchApproved) bucket.firstTouchApproved += 1;
         if (r.has_ticket) bucket.withKycTicketPostApproval += 1;
@@ -980,7 +981,7 @@
       const weeklyTrendRows = Object.entries(weeklyAggByWeek)
         .sort((a, b) => a[0].localeCompare(b[0]))
         .slice(-12);
-      document.getElementById("weeklyTrendMeta").textContent = `Last ${fmtInt(weeklyTrendRows.length)} registration-week cohorts in selected scope.`;
+      document.getElementById("weeklyTrendMeta").textContent = `Last ${fmtInt(weeklyTrendRows.length)} registration-week cohorts (${COHORT_WINDOW_DAYS}-day observation window).`;
       const medianOf = (arr) => {
         if (!arr.length) return NaN;
         const s = [...arr].sort((a, b) => a - b);
