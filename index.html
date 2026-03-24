@@ -155,6 +155,8 @@
         <div class="small" style="margin-top:10px; font-weight:600;">Outcome</div>
         <div class="alert" style="background:#f8fafc; border-color:#e2e8f0;">Tickets closed among PS-required with ticket: <b id="alertTicketsClosed">--</b></div>
         <div class="small" style="margin-top:6px;"><a href="monitoring/latest_flags.md" target="_blank" style="color:var(--blue);">Daily monitoring flags →</a></div>
+        <div class="small" style="margin-top:10px; font-weight:600;">Review Gaps</div>
+        <div class="alert a-bad">Reopened but no ticket opened: <b id="alertReopenNoTicket">--</b> <span style="font-weight:400; font-size:12px; color:#6b7280;" id="alertReopenNoTicketDetail"></span></div>
       </div>
     </div>
 
@@ -633,6 +635,8 @@
       document.getElementById("alertTicketsClosed").textContent = m.withTicket
         ? `${fmtInt(m.withTicketClosed)} / ${fmtInt(m.withTicket)} (${fmtPct(m.withTicketClosed / m.withTicket)})`
         : "n/a";
+      document.getElementById("alertReopenNoTicket").textContent = "0";
+      document.getElementById("alertReopenNoTicketDetail").textContent = "";
 
       // Fully dynamic review/attempt sections by selected registration-date range
       const autoSignalByAh = {};
@@ -658,8 +662,24 @@
         const sig = autoSignalByAh[id];
         if (!sig) return false;
         if (AUTO_REOPEN_EXCLUDE_IDS.has(id)) return false;
-        return Number(sig.has_reopened_event || 0) === 1 && Number(sig.orn_any_cnt || 0) === 0;
+        return Number(sig.has_reopened_event || 0) === 1 &&
+               Number(sig.has_pending_event || 0) === 1 &&
+               Number(sig.orn_any_cnt || 0) === 0;
       };
+      const reopenNoTicketIds = new Set(
+        clmMainRows
+          .filter((r) => {
+            const id = String(r.ah_id || "");
+            const sig = autoSignalByAh[id];
+            return sig &&
+              Number(sig.has_reopened_event || 0) === 1 &&
+              Number(sig.has_pending_event || 0) === 0 &&
+              Number(sig.orn_any_cnt || 0) === 0 &&
+              !AUTO_REOPEN_EXCLUDE_IDS.has(id);
+          })
+          .map((r) => String(r.ah_id || ""))
+          .filter(Boolean)
+      );
       const clmAutoReopenIdsForView = new Set(
         clmMainRows
           .filter((r) => hasAutoReopenSignal(String(r.ah_id || "")))
@@ -971,6 +991,11 @@
       renderWeeklyLineChart("trendManualE2EChart", weeklyTrendPoints, "manual_e2e_days", "#10b981", "trendManualE2ELatest", (v) => `${v.toFixed(1)}d`);
       renderWeeklyLineChart("trendFirstTouchChart", weeklyTrendPoints, "first_touch_pct", "#f59e0b", "trendFirstTouchLatest", (v) => fmtPct(v));
       renderWeeklyLineChart("trendKycTicketChart", weeklyTrendPoints, "kyc_ticket_pct", "#ef4444", "trendKycTicketLatest", (v) => fmtPct(v));
+      const reopenNoTicketInScope = new Set([...reopenNoTicketIds].filter((id) => firstOutcomeBaseIds.has(id)));
+      document.getElementById("alertReopenNoTicket").textContent = fmtInt(reopenNoTicketInScope.size);
+      document.getElementById("alertReopenNoTicketDetail").textContent = reopenNoTicketInScope.size > 0
+        ? `System flagged for manual review but no ticket was opened`
+        : "";
       document.getElementById("screenBase1").textContent = `Base: ${fmtInt(firstOutcomeBase)} submitted all docs`;
       document.getElementById("screenRows1").innerHTML = [
         rowHTMLClickable("Auto Approved (Any Attempt)", autoApprovedAny, firstOutcomeBase, "green", autoApprovedAnyNote, "First Review Outcome", "Auto Approved (Any Attempt)"),
