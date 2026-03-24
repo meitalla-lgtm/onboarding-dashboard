@@ -971,14 +971,16 @@
         bucket.submitted += 1;
         if (!approvedClassifiedIds.has(id)) return;
         const apprTs = r.approval_date ? Date.parse(String(r.approval_date)) : NaN;
-        if (!Number.isFinite(apprTs) || apprTs > windowEnd) return;
+        if (Number.isFinite(apprTs) && apprTs > windowEnd) return;
         bucket.approved += 1;
         const isManualApproved = manualApprovedAnyIds.has(id);
         const isFirstTouchApproved = autoApproved1Ids.has(id) || manualApproved1Ids.has(id);
         if (isManualApproved) {
           bucket.manualApproved += 1;
-          const e2eHours = (apprTs - regTs) / 36e5;
-          if (e2eHours >= 0) bucket.manualE2EHoursVals.push(e2eHours);
+          if (Number.isFinite(apprTs)) {
+            const e2eHours = (apprTs - regTs) / 36e5;
+            if (e2eHours >= 0) bucket.manualE2EHoursVals.push(e2eHours);
+          }
         }
         if (isFirstTouchApproved) bucket.firstTouchApproved += 1;
         if (r.has_ticket) bucket.withKycTicketPostApproval += 1;
