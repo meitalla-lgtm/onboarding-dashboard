@@ -933,11 +933,6 @@
       const manualApprovedCustomers = manualApprovedAny;
       const autoE2E = e2eHoursForIds(autoApprovedAnyIds);
       const manualE2E = e2eHoursForIds(manualApprovedAnyIds);
-      const _s = [...manualApprovedAnyIds].slice(0,3).map(id => {
-        const r = rowsByAh[id];
-        return id + ":" + (r?.qual_start_ts||"null") + "|" + (r?.approval_date||"null");
-      }).join(", ");
-      console.warn("E2E autoIds=" + autoApprovedAnyIds.size + " manualIds=" + manualApprovedAnyIds.size + " autoMed=" + autoE2E.median + " autoP90=" + autoE2E.p90 + " autoCnt=" + autoE2E.count + " manMed=" + manualE2E.median + " manP90=" + manualE2E.p90 + " manCnt=" + manualE2E.count + " samples=" + _s);
       const ticketAfterApprovalCustomers = [...approvedIds].filter((id) => {
         const r = rowsByAh[id];
         return !!(r && r.has_ticket);
