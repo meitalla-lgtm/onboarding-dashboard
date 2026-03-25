@@ -933,16 +933,16 @@
       const manualApprovedCustomers = manualApprovedAny;
       const autoE2E = e2eHoursForIds(autoApprovedAnyIds);
       const manualE2E = e2eHoursForIds(manualApprovedAnyIds);
-      console.log("DEBUG E2E:", {
+      console.warn("DEBUG E2E: " + JSON.stringify({
         autoIds: autoApprovedAnyIds.size,
         manualIds: manualApprovedAnyIds.size,
         autoE2E,
         manualE2E,
-        sampleManual: [...manualApprovedAnyIds].slice(0,3).map(id => {
+        sampleManual: [...manualApprovedAnyIds].slice(0,5).map(id => {
           const r = rowsByAh[id];
           return { id, qs: r?.qual_start_ts, appr: r?.approval_date, reg: r?.registration_date };
         }),
-      });
+      }));
       const ticketAfterApprovalCustomers = [...approvedIds].filter((id) => {
         const r = rowsByAh[id];
         return !!(r && r.has_ticket);
