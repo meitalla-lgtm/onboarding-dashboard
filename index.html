@@ -903,13 +903,15 @@
       const noFirstReviewEvent = noFirstReviewEventIds.size;
       const autoApprovedAnyNote = `1st: ${fmtInt(autoApproved1)}, 2nd: ${fmtInt(autoApproved2)}, 3rd+: ${fmtInt(autoApproved3)}`;
       const manualApprovedAnyNote = `Total manual approved (all attempts): ${fmtInt(manualApprovedAny)}`;
-      const e2eHoursForIds = (ids) => {
+      const e2eHoursForIds = (ids, endDateField = "approval_date") => {
         const vals = [...ids]
           .map((id) => {
             const r = rowsByAh[id];
-            if (!r || !r.registration_date || !r.approval_date) return NaN;
+            if (!r || !r.registration_date) return NaN;
+            const endVal = r[endDateField] || r.approval_date;
+            if (!endVal) return NaN;
             const startTs = parseTS(r.registration_date);
-            const endTs = parseTS(r.approval_date);
+            const endTs = parseTS(endVal);
             if (!Number.isFinite(startTs) || !Number.isFinite(endTs) || endTs < startTs) return NaN;
             return (endTs - startTs) / 36e5;
           })
@@ -928,7 +930,7 @@
       const autoApprovedCustomers = autoApprovedAny;
       const manualApprovedCustomers = manualApprovedAny;
       const autoE2E = e2eHoursForIds(autoApprovedAnyIds);
-      const manualE2E = e2eHoursForIds(manualApprovedAnyIds);
+      const manualE2E = e2eHoursForIds(manualApprovedAnyIds, "last_approval_ts");
       const ticketAfterApprovalCustomers = [...approvedIds].filter((id) => {
         const r = rowsByAh[id];
         return !!(r && r.has_ticket);
@@ -992,18 +994,26 @@
         const isFirstTouchApproved = autoApproved1Ids.has(id) || manualApproved1Ids.has(id);
         if (isManualApproved) {
           bucket.manualApproved += 1;
-          if (Number.isFinite(apprTs)) {
-            const e2eHours = (apprTs - regTs) / 36e5;
-            if (e2eHours >= 0) bucket.manualE2EHoursVals.push(e2eHours);
+          const lastApprVal = r.last_approval_ts || r.approval_date;
+          const lastApprTs = lastApprVal ? parseTS(lastApprVal) : NaN;
+          if (Number.isFinite(lastApprTs) && lastApprTs >= regTs) {
+            const e2eHours = (lastApprTs - regTs) / 36e5;
+            bucket.manualE2EHoursVals.push(e2eHours);
           }
         }
         if (isFirstTouchApproved) bucket.firstTouchApproved += 1;
         if (r.has_ticket) bucket.withKycTicketPostApproval += 1;
       });
+      const nowMs = Date.now();
+      const COHORT_MATURITY_DAYS = 6 + COHORT_WINDOW_DAYS;
       const weeklyTrendRows = Object.entries(weeklyAggByWeek)
+        .filter(([week]) => {
+          const weekStartMs = parseTS(week);
+          return Number.isFinite(weekStartMs) && (nowMs - weekStartMs) >= COHORT_MATURITY_DAYS * 864e5;
+        })
         .sort((a, b) => a[0].localeCompare(b[0]))
-        .slice(-12);
-      document.getElementById("weeklyTrendMeta").textContent = `Last ${fmtInt(weeklyTrendRows.length)} registration-week cohorts (${COHORT_WINDOW_DAYS}-day observation window).`;
+        .slice(-5);
+      document.getElementById("weeklyTrendMeta").textContent = `Last ${fmtInt(weeklyTrendRows.length)} completed registration-week cohorts (${COHORT_WINDOW_DAYS}-day observation window, all cohorts fully matured).`;
       const medianOf = (arr) => {
         if (!arr.length) return NaN;
         const s = [...arr].sort((a, b) => a - b);
