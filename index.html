@@ -278,6 +278,12 @@
     const fmtPctNa = (num, den) => den > 0 ? fmtPct(num / den) : "n/a";
     const fmtHours = (v) => Number.isFinite(Number(v)) ? `${Number(v).toFixed(1)}h` : "n/a";
     const fmtDays = (v) => Number.isFinite(Number(v)) ? `${(Number(v) / 24).toFixed(1)}d` : "n/a";
+    const parseTS = (s) => {
+      if (!s) return NaN;
+      const str = String(s);
+      if (str.length <= 10) return Date.parse(str + "T00:00:00");
+      return Date.parse(str);
+    };
     const diffCount = (curr, prev) => `${curr - prev >= 0 ? "+" : ""}${fmtInt(curr - prev)} vs comparison`;
     const diffPct = (curr, prev) => `${((curr - prev) * 100 >= 0 ? "+" : "")}${((curr - prev) * 100).toFixed(1)}pp vs comparison`;
     const diffHours = (curr, prev) => `${curr - prev >= 0 ? "+" : ""}${(curr - prev).toFixed(1)}h vs comparison`;
@@ -902,8 +908,8 @@
           .map((id) => {
             const r = rowsByAh[id];
             if (!r || !r.registration_date || !r.approval_date) return NaN;
-            const startTs = Date.parse(String(r.registration_date));
-            const endTs = Date.parse(String(r.approval_date));
+            const startTs = parseTS(r.registration_date);
+            const endTs = parseTS(r.approval_date);
             if (!Number.isFinite(startTs) || !Number.isFinite(endTs) || endTs < startTs) return NaN;
             return (endTs - startTs) / 36e5;
           })
@@ -963,7 +969,7 @@
         if (!r || !r.registration_date) return;
         const wk = weekStartFor(r.registration_date);
         if (!wk) return;
-        const regTs = Date.parse(String(r.registration_date));
+        const regTs = parseTS(r.registration_date);
         if (!Number.isFinite(regTs)) return;
         const windowEnd = regTs + COHORT_WINDOW_DAYS * 864e5;
         if (!weeklyAggByWeek[wk]) {
@@ -979,7 +985,7 @@
         const bucket = weeklyAggByWeek[wk];
         bucket.submitted += 1;
         if (!approvedClassifiedIds.has(id)) return;
-        const apprTs = r.approval_date ? Date.parse(String(r.approval_date)) : NaN;
+        const apprTs = r.approval_date ? parseTS(r.approval_date) : NaN;
         if (Number.isFinite(apprTs) && apprTs > windowEnd) return;
         bucket.approved += 1;
         const isManualApproved = manualApprovedAnyIds.has(id);
