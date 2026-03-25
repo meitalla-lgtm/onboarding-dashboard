@@ -809,7 +809,7 @@
           let attempt = 1;
           const fcMax = fc ? Number(fc.max_uploads || 0) : 0;
           const effectiveManual = hasStrict
-            ? (strict.strict_class === "manual" || reviewerManualEvidence || fcHumanEvidence)
+            ? strict.strict_class === "manual"
             : isManualApproval;
           if (hasStrict && !effectiveManual) {
             attempt = 1;
