@@ -110,9 +110,9 @@
     <div class="kpi-grid">
       <div class="kpi"><div class="t">Approved Customers</div><div class="v" id="kpiApproved">--</div><div class="d" id="kpiApprovedDelta">--</div></div>
       <div class="kpi"><div class="t">Auto Approved</div><div class="v" id="kpiAutoAny">--</div><div class="d" id="kpiAutoAnyDelta">--</div></div>
-      <div class="kpi"><div class="t">Median E2E Time to Auto Approval</div><div class="v" id="kpiHours">--</div><div class="d" id="kpiHoursDelta">--</div></div>
+      <div class="kpi"><div class="t">Median E2E Auto (Qual Open → Approved)</div><div class="v" id="kpiHours">--</div><div class="d" id="kpiHoursDelta">--</div></div>
       <div class="kpi"><div class="t">Manually Approved</div><div class="v" id="kpiWithPs">--</div><div class="d" id="kpiWithPsDelta">--</div></div>
-      <div class="kpi"><div class="t">Median E2E Time to Manual Approval</div><div class="v" id="kpiWithoutPs">--</div><div class="d" id="kpiWithoutPsDelta">--</div></div>
+      <div class="kpi"><div class="t">Median E2E Manual (Qual Open → Approved)</div><div class="v" id="kpiWithoutPs">--</div><div class="d" id="kpiWithoutPsDelta">--</div></div>
       <div class="kpi"><div class="t">Customers With Ticket After Approval (30d)</div><div class="v" id="kpiWithTicket">--</div><div class="d" id="kpiWithTicketDelta">--</div></div>
     </div>
 
@@ -203,7 +203,7 @@
           <div class="trend-canvas" id="trendManualPctChart"></div>
         </div>
         <div class="trend-chart">
-          <div class="trend-head"><div class="trend-title">Median E2E Days (Manual Approved)</div><div class="trend-latest" id="trendManualE2ELatest">--</div></div>
+          <div class="trend-head"><div class="trend-title">Median E2E Days Manual (Qual Open → Approved)</div><div class="trend-latest" id="trendManualE2ELatest">--</div></div>
           <div class="trend-canvas" id="trendManualE2EChart"></div>
         </div>
         <div class="trend-chart">
@@ -907,10 +907,12 @@
         const vals = [...ids]
           .map((id) => {
             const r = rowsByAh[id];
-            if (!r || !r.registration_date) return NaN;
+            if (!r) return NaN;
+            const startRaw = r.qual_start_ts || r.registration_date;
+            if (!startRaw) return NaN;
             const endVal = r[endDateField] || r.approval_date;
             if (!endVal) return NaN;
-            const startTs = parseTS(r.registration_date);
+            const startTs = parseTS(startRaw);
             const endTs = parseTS(endVal);
             if (!Number.isFinite(startTs) || !Number.isFinite(endTs) || endTs < startTs) return NaN;
             return (endTs - startTs) / 36e5;
@@ -994,8 +996,9 @@
         const isFirstTouchApproved = autoApproved1Ids.has(id) || manualApproved1Ids.has(id);
         if (isManualApproved) {
           bucket.manualApproved += 1;
-          if (Number.isFinite(apprTs) && apprTs >= regTs) {
-            const e2eHours = (apprTs - regTs) / 36e5;
+          const startTs = r.qual_start_ts ? parseTS(r.qual_start_ts) : regTs;
+          if (Number.isFinite(apprTs) && Number.isFinite(startTs) && apprTs >= startTs) {
+            const e2eHours = (apprTs - startTs) / 36e5;
             bucket.manualE2EHoursVals.push(e2eHours);
           }
         }
