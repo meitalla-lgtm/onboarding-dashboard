@@ -930,7 +930,7 @@
       const autoApprovedCustomers = autoApprovedAny;
       const manualApprovedCustomers = manualApprovedAny;
       const autoE2E = e2eHoursForIds(autoApprovedAnyIds);
-      const manualE2E = e2eHoursForIds(manualApprovedAnyIds, "last_approval_ts");
+      const manualE2E = e2eHoursForIds(manualApprovedAnyIds);
       const ticketAfterApprovalCustomers = [...approvedIds].filter((id) => {
         const r = rowsByAh[id];
         return !!(r && r.has_ticket);
@@ -994,10 +994,8 @@
         const isFirstTouchApproved = autoApproved1Ids.has(id) || manualApproved1Ids.has(id);
         if (isManualApproved) {
           bucket.manualApproved += 1;
-          const lastApprVal = r.last_approval_ts || r.approval_date;
-          const lastApprTs = lastApprVal ? parseTS(lastApprVal) : NaN;
-          if (Number.isFinite(lastApprTs) && lastApprTs >= regTs) {
-            const e2eHours = (lastApprTs - regTs) / 36e5;
+          if (Number.isFinite(apprTs) && apprTs >= regTs) {
+            const e2eHours = (apprTs - regTs) / 36e5;
             bucket.manualE2EHoursVals.push(e2eHours);
           }
         }
@@ -1475,10 +1473,13 @@
       const investSectionSel = document.getElementById("investSection");
       const investMetricSel = document.getElementById("investMetric");
 
-      const dates = [...new Set(DATA.map(r => r.registration_date).filter(Boolean))].sort();
-      if (dates.length) {
-        const minDate = dates[0];
-        const maxDate = dates[dates.length - 1];
+      const allDates = [...new Set([
+        ...DATA.map(r => r.registration_date).filter(Boolean),
+        ...CLM_WEEKLY.map(r => r.date).filter(Boolean),
+      ])].sort();
+      if (allDates.length) {
+        const minDate = allDates[0];
+        const maxDate = allDates[allDates.length - 1];
         [mainStartInput, mainEndInput, compStartInput, compEndInput].forEach((el) => {
           el.min = minDate;
           el.max = maxDate;
