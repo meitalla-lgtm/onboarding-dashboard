@@ -1500,7 +1500,7 @@
       const prevEnd = toIso(lastPrev);
       const clmStart = "2026-02-01";
       const clmEnd = "2026-02-28";
-      const canUseClmDefault = !dates.length || (clmStart >= dates[0] && clmEnd <= dates[dates.length - 1]);
+      const canUseClmDefault = !allDates.length || (clmStart >= allDates[0] && clmEnd <= allDates[allDates.length - 1]);
       mainStartInput.value = canUseClmDefault ? clmStart : prevStart;
       mainEndInput.value = canUseClmDefault ? clmEnd : prevEnd;
       compStartInput.value = "";
