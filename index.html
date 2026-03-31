@@ -156,6 +156,20 @@
       </div>
     </div>
 
+    <div class="card" style="margin-top:12px;">
+      <div class="h3">Manual Reopen Analysis — By Requirement Type</div>
+      <div class="small">Requirement types involved in manually reopened entities. Shows which document types had non-approved sub-requirements at review time.</div>
+      <div class="small" id="reopenReqBaseMeta" style="margin-top:6px;">Base: -- manually reopened entities</div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr); margin-top:12px;">
+        <div class="kpi"><div class="t">Manually Reopened Entities (All Attempts)</div><div class="v" id="kpiReopenTotal">--</div><div class="d" id="kpiReopenTotalDelta">--</div></div>
+        <div class="kpi"><div class="t">Unique Requirement Types Involved</div><div class="v" id="kpiReopenReqTypes">--</div><div class="d" id="kpiReopenReqTypesDelta">--</div></div>
+        <div class="kpi"><div class="t">Avg Requirement Types per Reopen</div><div class="v" id="kpiReopenAvgReqTypes">--</div><div class="d" id="kpiReopenAvgReqTypesDelta">--</div></div>
+      </div>
+      <div class="small" style="margin-top:14px; font-weight:600;">Distribution by Requirement Type (reopened entities)</div>
+      <div id="reopenReqRows" style="margin-top:4px;"></div>
+      <div class="small" style="margin-top:10px; color:#9ca3af;" id="reopenReqNote">Signal: REOPEN_REQ_SIGNAL from FC RequirementTypes. Sub-reason drill-down available in future release.</div>
+    </div>
+
     <div class="grid2">
       <div class="card">
         <div class="h3">Post-Approval Requirements & Tickets</div>
@@ -259,6 +273,9 @@
       FC_SIGNAL = (d.FC_SIGNAL || []).map((r) => ({
         ah_id: r[0], max_uploads: r[1], has_human: r[2], first_reject_auto: r[3] || 0
       }));
+      REOPEN_REQ_SIGNAL = (d.REOPEN_REQ_SIGNAL || []).map((r) => ({
+        ah_id: r[0], requirement_type: r[1], not_approved_count: r[2], total_count: r[3]
+      }));
     }
 
     let DATA = null;
@@ -269,6 +286,7 @@
     let STRICT_TOUCH_SIGNAL = null;
     let REVIEWER_SIGNAL = null;
     let FC_SIGNAL = null;
+    let REOPEN_REQ_SIGNAL = null;
     let ATTEMPTS_WEEKLY = null;
     let TRIGGERS = null;
     const MANUAL_TICKET_WINDOW_HOURS = 2;
@@ -1235,6 +1253,74 @@
         }
       };
 
+      // --- Manual Reopen Analysis by Requirement Type ---
+      const allManualReopenIds = new Set([
+        ...reopenedResubmittedIds,
+        ...reopenedNoResponseIds,
+        ...secondReopenedResubmittedIds,
+        ...secondReopenedNoResponseIds,
+        ...[...thirdReopenedIds].filter((id) => thirdAttemptBaseIds.has(id)),
+      ]);
+      const reopenReqBase = allManualReopenIds.size;
+      const reopenReqByType = {};
+      let reopenReqCoverage = 0;
+      if (REOPEN_REQ_SIGNAL && REOPEN_REQ_SIGNAL.length > 0) {
+        const reopenReqEntitiesWithData = new Set();
+        REOPEN_REQ_SIGNAL.forEach((r) => {
+          if (!allManualReopenIds.has(r.ah_id)) return;
+          if (Number(r.not_approved_count || 0) === 0) return;
+          const key = r.requirement_type || "Unknown";
+          if (!reopenReqByType[key]) reopenReqByType[key] = { entities: new Set(), notApproved: 0, total: 0 };
+          reopenReqByType[key].entities.add(r.ah_id);
+          reopenReqByType[key].notApproved += Number(r.not_approved_count || 0);
+          reopenReqByType[key].total += Number(r.total_count || 0);
+          reopenReqEntitiesWithData.add(r.ah_id);
+        });
+        reopenReqCoverage = reopenReqEntitiesWithData.size;
+      }
+      const reopenReqList = Object.entries(reopenReqByType)
+        .map(([k, v]) => ({
+          type: k,
+          entities: v.entities.size,
+          notApproved: v.notApproved,
+          total: v.total,
+          entityPct: reopenReqBase ? (v.entities.size / reopenReqBase) : 0,
+        }))
+        .sort((a, b) => b.entities - a.entities);
+      const uniqueReqTypes = reopenReqList.length;
+      const avgReqTypesPerReopen = reopenReqCoverage > 0
+        ? (reopenReqList.reduce((s, x) => s + x.entities, 0) / reopenReqCoverage)
+        : 0;
+      document.getElementById("kpiReopenTotal").textContent = fmtInt(reopenReqBase);
+      document.getElementById("kpiReopenTotalDelta").textContent =
+        `${fmtInt(reopenReqCoverage)} with FC data (${fmtPct(reopenReqBase ? reopenReqCoverage / reopenReqBase : 0)} coverage)`;
+      document.getElementById("kpiReopenReqTypes").textContent = fmtInt(uniqueReqTypes);
+      document.getElementById("kpiReopenReqTypesDelta").textContent = "distinct types with rejections";
+      document.getElementById("kpiReopenAvgReqTypes").textContent = avgReqTypesPerReopen.toFixed(1);
+      document.getElementById("kpiReopenAvgReqTypesDelta").textContent = "requirement types per entity";
+      document.getElementById("reopenReqBaseMeta").textContent =
+        `Base: ${fmtInt(reopenReqBase)} manually reopened entities (all attempts, current filters)`;
+      if (reopenReqList.length === 0) {
+        document.getElementById("reopenReqRows").innerHTML =
+          `<div class="small" style="margin-top:8px;">No REOPEN_REQ_SIGNAL data loaded. Run extract_reopen_requirements.py → _patch_reopen_requirements.py to populate.</div>`;
+      } else {
+        const reopenReqMajor = reopenReqList.filter((x) => x.entities >= 5);
+        const reopenReqMinor = reopenReqList.filter((x) => x.entities < 5);
+        const othersEntities = new Set(reopenReqMinor.flatMap((x) => [...reopenReqByType[x.type].entities]));
+        const othersNotApproved = reopenReqMinor.reduce((s, x) => s + x.notApproved, 0);
+        const reopenReqDisplay = othersEntities.size > 0
+          ? [...reopenReqMajor, { type: "Others", entities: othersEntities.size, notApproved: othersNotApproved, entityPct: reopenReqBase ? (othersEntities.size / reopenReqBase) : 0 }]
+          : reopenReqMajor;
+        document.getElementById("reopenReqRows").innerHTML = reopenReqDisplay
+          .map((x) => {
+            const color = x.entityPct >= 0.3 ? "red" : x.entityPct >= 0.15 ? "amber" : "blue";
+            return `<div class="tbl-row"><div class="lbl"><span class="dot ${color}"></span>${x.type}</div><div class="num">${fmtInt(x.entities)}</div><div class="pct">${fmtPct(x.entityPct)}</div><div class="delta">${fmtInt(x.notApproved)} rejected subs</div></div>`;
+          })
+          .join("");
+        document.getElementById("reopenReqNote").textContent =
+          `Signal: REOPEN_REQ_SIGNAL · ${fmtInt(REOPEN_REQ_SIGNAL.length)} rows · Coverage: ${fmtPct(reopenReqBase ? reopenReqCoverage / reopenReqBase : 0)} of reopened entities`;
+      }
+
       const clmAllRowsByDate = clmFunnelRows(mainStart, mainEnd, pack, ahType);
       const approvedIdsGlobal = setFromRows(clmAllRowsByDate, (r) => Number(r.approved_accounts || 0) > 0);
       const triggerRows = TRIGGERS.filter((r) =>
@@ -1460,6 +1546,13 @@
         { section: "3rd or More Attempt", metric: "Approved", ids: new Set([...thirdApprovedIds].filter((id) => thirdAttemptBaseIds.has(id))) },
         { section: "3rd or More Attempt", metric: "Reopen - No Response", ids: new Set([...thirdReopenedIds].filter((id) => thirdAttemptBaseIds.has(id))) },
         { section: "3rd or More Attempt", metric: "Pending Response", ids: new Set([...thirdPendingIds, ...thirdNoOutcomeIds]) },
+        { section: "Manual Reopen Analysis", metric: "All Manually Reopened (All Attempts)", ids: allManualReopenIds },
+        ...reopenReqList.slice(0, 10).map((x) => ({
+          section: "Manual Reopen Analysis",
+          metric: `Req Type: ${x.type}`,
+          ids: reopenReqByType[x.type] ? reopenReqByType[x.type].entities : new Set(),
+          note: `${fmtInt(x.notApproved)} rejected subs`,
+        })),
         { section: "Post-Approval Requirements & Tickets", metric: "Has Any Requirement Trigger", ids: new Set(triggerAh) },
         { section: "Post-Approval Requirements & Tickets", metric: "Has Ticket After Trigger", ids: new Set(triggerWithTicketAh) },
         ...triggerDisplay.map((x) => ({
