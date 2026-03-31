@@ -110,9 +110,9 @@
     <div class="kpi-grid">
       <div class="kpi"><div class="t">Approved Customers</div><div class="v" id="kpiApproved">--</div><div class="d" id="kpiApprovedDelta">--</div></div>
       <div class="kpi"><div class="t">Auto Approved</div><div class="v" id="kpiAutoAny">--</div><div class="d" id="kpiAutoAnyDelta">--</div></div>
-      <div class="kpi"><div class="t">Median E2E Auto (Qual Open → Approved)</div><div class="v" id="kpiHours">--</div><div class="d" id="kpiHoursDelta">--</div></div>
+      <div class="kpi"><div class="t">Median E2E Registration to Auto Approval</div><div class="v" id="kpiHours">--</div><div class="d" id="kpiHoursDelta">--</div></div>
       <div class="kpi"><div class="t">Manually Approved</div><div class="v" id="kpiWithPs">--</div><div class="d" id="kpiWithPsDelta">--</div></div>
-      <div class="kpi"><div class="t">Median E2E Manual (Qual Open → Approved)</div><div class="v" id="kpiWithoutPs">--</div><div class="d" id="kpiWithoutPsDelta">--</div></div>
+      <div class="kpi"><div class="t">Median E2E Registration to Manual Approval</div><div class="v" id="kpiWithoutPs">--</div><div class="d" id="kpiWithoutPsDelta">--</div></div>
       <div class="kpi"><div class="t">Customers With Ticket After Approval (30d)</div><div class="v" id="kpiWithTicket">--</div><div class="d" id="kpiWithTicketDelta">--</div></div>
     </div>
 
@@ -203,7 +203,7 @@
           <div class="trend-canvas" id="trendManualPctChart"></div>
         </div>
         <div class="trend-chart">
-          <div class="trend-head"><div class="trend-title">Median E2E Days Manual (Qual Open → Approved)</div><div class="trend-latest" id="trendManualE2ELatest">--</div></div>
+          <div class="trend-head"><div class="trend-title">Median E2E Days Manual (Registration to Approval)</div><div class="trend-latest" id="trendManualE2ELatest">--</div></div>
           <div class="trend-canvas" id="trendManualE2EChart"></div>
         </div>
         <div class="trend-chart">
@@ -809,7 +809,7 @@
           let attempt = 1;
           const fcMax = fc ? Number(fc.max_uploads || 0) : 0;
           const effectiveManual = hasStrict
-            ? (strict.strict_class === "manual" || reviewerManualEvidence || fcHumanEvidence)
+            ? (strict.strict_class === "manual" || reviewerManualEvidence)
             : isManualApproval;
           if (hasStrict && !effectiveManual) {
             attempt = 1;
@@ -903,17 +903,16 @@
       const noFirstReviewEvent = noFirstReviewEventIds.size;
       const autoApprovedAnyNote = `1st: ${fmtInt(autoApproved1)}, 2nd: ${fmtInt(autoApproved2)}, 3rd+: ${fmtInt(autoApproved3)}`;
       const manualApprovedAnyNote = `Total manual approved (all attempts): ${fmtInt(manualApprovedAny)}`;
-      const e2eHoursForIds = (ids, endDateField = "approval_date") => {
+      const e2eHoursForIds = (ids) => {
         const vals = [...ids]
           .map((id) => {
             const r = rowsByAh[id];
-            if (!r) return NaN;
-            const startRaw = r.qual_start_ts || r.registration_date;
-            if (!startRaw) return NaN;
-            const endVal = r[endDateField] || r.approval_date;
-            if (!endVal) return NaN;
-            const startTs = parseTS(startRaw);
-            const endTs = parseTS(endVal);
+            if (!r || !r.approval_date) return NaN;
+            if (Number(r.is_blocked) === 1) return NaN;
+            const regStart = r.registration_datetime || r.registration_date;
+            if (!regStart) return NaN;
+            const startTs = parseTS(regStart);
+            const endTs = parseTS(r.approval_date);
             if (!Number.isFinite(startTs) || !Number.isFinite(endTs) || endTs < startTs) return NaN;
             return (endTs - startTs) / 36e5;
           })
@@ -996,10 +995,13 @@
         const isFirstTouchApproved = autoApproved1Ids.has(id) || manualApproved1Ids.has(id);
         if (isManualApproved) {
           bucket.manualApproved += 1;
-          const startTs = r.qual_start_ts ? parseTS(r.qual_start_ts) : regTs;
-          if (Number.isFinite(apprTs) && Number.isFinite(startTs) && apprTs >= startTs) {
-            const e2eHours = (apprTs - startTs) / 36e5;
-            bucket.manualE2EHoursVals.push(e2eHours);
+          if (Number(r.is_blocked) !== 1) {
+            const regStart = r.registration_datetime || r.registration_date;
+            const startTs = regStart ? parseTS(regStart) : regTs;
+            if (Number.isFinite(apprTs) && Number.isFinite(startTs) && apprTs >= startTs) {
+              const e2eHours = (apprTs - startTs) / 36e5;
+              bucket.manualE2EHoursVals.push(e2eHours);
+            }
           }
         }
         if (isFirstTouchApproved) bucket.firstTouchApproved += 1;
