@@ -16,7 +16,7 @@
     .btn { border:1px solid var(--border); background:#fff; border-radius:10px; padding:8px 12px; font-weight:600; color:#374151; }
     .chip-row { margin-top:14px; display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr 1fr; gap:8px; }
     .chip { border:1px solid var(--border); background:#fff; border-radius:12px; padding:10px 12px; font-weight:600; color:#374151; font-size:14px; }
-    .filters { margin-top:10px; display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+    .filters { margin-top:10px; display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
     .filter { border:1px solid var(--border); background:#fff; border-radius:12px; padding:8px 10px; }
     .filter label { display:block; color:#6b7280; font-size:12px; margin-bottom:4px; font-weight:600; }
     .filter select, .filter input { width:100%; border:1px solid #d1d5db; border-radius:8px; padding:8px; font-size:14px; }
@@ -105,6 +105,7 @@
       <div class="filter"><label>Is Bot</label><select id="isBotFilter"></select></div>
       <div class="filter"><label>Is Bot Expanded</label><select id="isBotExpandedFilter"></select></div>
       <div class="filter"><label>Is Arkose Bot</label><select id="isArkoseBotFilter"></select></div>
+      <div class="filter"><label>CSP (ISP)</label><select id="cspFilter"></select></div>
     </div>
 
     <div class="kpi-grid">
@@ -235,7 +236,8 @@
         ip_country_name: r[4], reg_country_name: r[5], ah_type: r[6], is_blocked: r[7],
         is_bot: r[8], is_bot_expanded: r[9], is_arkose_bot: r[10],
         completed_signup_step: r[11], requests_submitted_step: r[12],
-        submitted_all_docs_step: r[13], approved_accounts: r[14], confirmed_tcs_step: r[15]
+        submitted_all_docs_step: r[13], approved_accounts: r[14], confirmed_tcs_step: r[15],
+        is_csp: r[16] || "0"
       }));
       AUTO_REOPEN_SIGNAL = d.AUTO_REOPEN_SIGNAL.map((r) => ({
         ah_id: r[0], has_reopened_event: r[1], has_pending_event: r[2],
@@ -487,6 +489,11 @@
       return String(v) === String(selected);
     }
 
+    function matchesCsp(val, selected) {
+      if (selected === "ANY") return true;
+      return String(val || "0") === String(selected);
+    }
+
     function matchesAhType(selected, rawValue) {
       if (selected === "ALL") return true;
       if (selected === "CISP") {
@@ -518,6 +525,7 @@
         matchesFilterProxy(r.is_bot, pack.is_bot) &&
         matchesFilterProxy(r.is_bot_expanded, pack.is_bot_expanded) &&
         matchesFilterProxy(r.is_arkose_bot, pack.is_arkose_bot) &&
+        matchesCsp(r.is_csp, pack.is_csp) &&
         matchesDataAhType(ahType, r.customer_type || "Unknown")
       );
     }
@@ -534,6 +542,7 @@
         matchesFilterProxy(r.is_bot, pack.is_bot) &&
         matchesFilterProxy(r.is_bot_expanded, pack.is_bot_expanded) &&
         matchesFilterProxy(r.is_arkose_bot, pack.is_arkose_bot) &&
+        matchesCsp(r.is_csp, pack.is_csp) &&
         matchesDataAhType(ahType, r.customer_type || "Unknown")
       );
     }
@@ -549,6 +558,7 @@
         matchesFilter(r.is_bot, pack.is_bot) &&
         matchesFilter(r.is_bot_expanded, pack.is_bot_expanded) &&
         matchesFilter(r.is_arkose_bot, pack.is_arkose_bot) &&
+        matchesCsp(r.is_csp, pack.is_csp) &&
         matchesAhType(ahType, r.ah_type)
       );
     }
@@ -567,6 +577,7 @@
         is_bot: document.getElementById("isBotFilter").value,
         is_bot_expanded: document.getElementById("isBotExpandedFilter").value,
         is_arkose_bot: document.getElementById("isArkoseBotFilter").value,
+        is_csp: document.getElementById("cspFilter").value,
       };
       const ahType = document.getElementById("ahTypeFilter").value;
 
@@ -608,6 +619,7 @@
         (pack.is_bot !== "ANY" ? 1 : 0) +
         (pack.is_bot_expanded !== "ANY" ? 1 : 0) +
         (pack.is_arkose_bot !== "ANY" ? 1 : 0) +
+        (pack.is_csp !== "ANY" ? 1 : 0) +
         (ahType !== "ALL" ? 1 : 0);
       document.getElementById("chipMainPeriod").textContent = mainLabel;
       document.getElementById("chipComparePeriod").textContent = compareLabel;
@@ -1235,6 +1247,7 @@
         matchesFilterProxy(r.is_bot, pack.is_bot) &&
         matchesFilterProxy(r.is_bot_expanded, pack.is_bot_expanded) &&
         matchesFilterProxy(r.is_arkose_bot, pack.is_arkose_bot) &&
+        matchesCsp(r.is_csp, pack.is_csp) &&
         matchesDataAhType(ahType, r.customer_type || "Unknown")
       );
       const triggerAh = new Set(triggerRows.map((r) => r.ah_id));
@@ -1475,6 +1488,7 @@
       const isBotSel = document.getElementById("isBotFilter");
       const isBotExpandedSel = document.getElementById("isBotExpandedFilter");
       const isArkoseBotSel = document.getElementById("isArkoseBotFilter");
+      const cspSel = document.getElementById("cspFilter");
       const investSectionSel = document.getElementById("investSection");
       const investMetricSel = document.getElementById("investMetric");
 
@@ -1533,6 +1547,7 @@
       isBotSel.innerHTML = `<option value="ANY">is any value</option><option value="0" selected>0</option><option value="1">1</option>`;
       isBotExpandedSel.innerHTML = `<option value="ANY">is any value</option><option value="0" selected>0</option><option value="1">1</option>`;
       isArkoseBotSel.innerHTML = `<option value="ANY" selected>any value</option>`;
+      cspSel.innerHTML = `<option value="ANY" selected>All</option><option value="1">CSP (ISP) Only</option><option value="0">Non-CSP Only</option>`;
       countryGroupSel.value = "NOT_IN_ROLLOUT";
       ahTypeSel.value = "CISP";
       isBlockedSel.value = "0";
@@ -1543,7 +1558,7 @@
       [
         mainStartInput, mainEndInput, compStartInput, compEndInput,
         countryBusinessTierSel, countryGroupSel, ipCountrySel, regCountrySel,
-        ahTypeSel, isBlockedSel, isBotSel, isBotExpandedSel, isArkoseBotSel
+        ahTypeSel, isBlockedSel, isBotSel, isBotExpandedSel, isArkoseBotSel, cspSel
       ].forEach((el) => {
         el.addEventListener("change", render);
         el.addEventListener("input", render);
