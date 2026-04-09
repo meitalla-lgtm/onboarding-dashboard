@@ -47,6 +47,8 @@
     .tbl-title { font-size:24px; font-weight:800; margin:0 0 6px; }
     .tbl-sub { color:#6b7280; font-size:13px; margin-bottom:8px; }
     .tbl-row { display:grid; grid-template-columns:1.8fr .9fr .6fr .6fr; gap:8px; align-items:center; padding:10px 0; border-top:1px solid #f0f1f3; }
+    .cc-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1.1fr; gap:8px; align-items:center; padding:10px 0; border-top:1px solid #f0f1f3; font-size:14px; }
+    .cc-head { font-weight:700; color:#374151; border-top:none; padding-top:0; }
     .lbl { display:flex; align-items:center; gap:8px; font-weight:600; }
     .dot { width:10px; height:10px; border-radius:999px; display:inline-block; }
     .dot.green { background:#10b981; } .dot.blue { background:#3b82f6; } .dot.amber { background:#f59e0b; } .dot.red { background:#ef4444; } .dot.gray { background:#6b7280; }
@@ -185,10 +187,18 @@
         <div id="kycReasonRows"></div>
       </div>
       <div class="card">
-        <div class="h3">Reason Drill-down (Next)</div>
-        <div class="small">Reason-level split can be added per trigger in drill-down view.</div>
+        <div class="h3">Trigger drill-down</div>
+        <div class="small">Click a trigger row at left to preview customers. CC (Customer Care) taxonomy is in the section below.</div>
         <div id="kycRegionRows" style="margin-top:10px;"></div>
       </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="h3">CC inquiries before vs after approval (30 days)</div>
+      <div class="small">ORN incidents whose subject line starts with &quot;CC,&quot; (same style as internal ticket description). Reason = second segment after the comma. Windows: created time in [approval − 30d, approval) vs [approval, approval + 30d). Approval time matches strict-touch (ORN AH_KYC=25 vs qualification approved-after-pending, earliest).</div>
+      <div class="small" id="ccInquiryBaseMeta" style="margin-top:8px;">Base: -- approved customers · Ticket incidents: --</div>
+      <div id="ccInquiryRows" style="margin-top:10px;"></div>
+      <div class="small" id="ccInquiryFootnote" style="margin-top:10px;color:#9ca3af;">--</div>
     </div>
 
     <div class="card" style="margin-top:12px;">
@@ -276,6 +286,18 @@
       REOPEN_REQ_SIGNAL = (d.REOPEN_REQ_SIGNAL || []).map((r) => ({
         ah_id: r[0], requirement_type: r[1], not_approved_count: r[2], total_count: r[3]
       }));
+      const ccMap = {};
+      (d.CC_INQUIRY_SIGNAL || []).forEach((r) => {
+        const ah = String(r[0] || "");
+        if (!ah) return;
+        if (!ccMap[ah]) ccMap[ah] = [];
+        ccMap[ah].push({
+          reason: String(r[1] || ""),
+          before30: Number(r[2] || 0),
+          after30: Number(r[3] || 0),
+        });
+      });
+      window.__ccInquiryByAh = ccMap;
     }
 
     let DATA = null;
@@ -1300,17 +1322,22 @@
       document.getElementById("kpiReopenAvgReqTypesDelta").textContent = "requirement types per entity";
       document.getElementById("reopenReqBaseMeta").textContent =
         `Base: ${fmtInt(reopenReqBase)} manually reopened entities (all attempts, current filters)`;
+      const REOPEN_REQ_TYPE_OTHERS_THRESHOLD = 100;
+      let reopenReqDisplay = [];
+      let reopenReqOthersEntityIds = new Set();
+      if (reopenReqList.length > 0) {
+        const reopenReqMajor = reopenReqList.filter((x) => x.entities >= REOPEN_REQ_TYPE_OTHERS_THRESHOLD);
+        const reopenReqMinor = reopenReqList.filter((x) => x.entities < REOPEN_REQ_TYPE_OTHERS_THRESHOLD);
+        reopenReqOthersEntityIds = new Set(reopenReqMinor.flatMap((x) => [...reopenReqByType[x.type].entities]));
+        const othersNotApproved = reopenReqMinor.reduce((s, x) => s + x.notApproved, 0);
+        reopenReqDisplay = reopenReqOthersEntityIds.size > 0
+          ? [...reopenReqMajor, { type: "Others", entities: reopenReqOthersEntityIds.size, notApproved: othersNotApproved, entityPct: reopenReqBase ? (reopenReqOthersEntityIds.size / reopenReqBase) : 0 }]
+          : reopenReqMajor;
+      }
       if (reopenReqList.length === 0) {
         document.getElementById("reopenReqRows").innerHTML =
           `<div class="small" style="margin-top:8px;">No REOPEN_REQ_SIGNAL data loaded. Run extract_reopen_requirements.py → _patch_reopen_requirements.py to populate.</div>`;
       } else {
-        const reopenReqMajor = reopenReqList.filter((x) => x.entities >= 5);
-        const reopenReqMinor = reopenReqList.filter((x) => x.entities < 5);
-        const othersEntities = new Set(reopenReqMinor.flatMap((x) => [...reopenReqByType[x.type].entities]));
-        const othersNotApproved = reopenReqMinor.reduce((s, x) => s + x.notApproved, 0);
-        const reopenReqDisplay = othersEntities.size > 0
-          ? [...reopenReqMajor, { type: "Others", entities: othersEntities.size, notApproved: othersNotApproved, entityPct: reopenReqBase ? (othersEntities.size / reopenReqBase) : 0 }]
-          : reopenReqMajor;
         document.getElementById("reopenReqRows").innerHTML = reopenReqDisplay
           .map((x) => {
             const color = x.entityPct >= 0.3 ? "red" : x.entityPct >= 0.15 ? "amber" : "blue";
@@ -1318,7 +1345,7 @@
           })
           .join("");
         document.getElementById("reopenReqNote").textContent =
-          `Signal: REOPEN_REQ_SIGNAL · ${fmtInt(REOPEN_REQ_SIGNAL.length)} rows · Coverage: ${fmtPct(reopenReqBase ? reopenReqCoverage / reopenReqBase : 0)} of reopened entities`;
+          `Signal: REOPEN_REQ_SIGNAL · ${fmtInt(REOPEN_REQ_SIGNAL.length)} rows · Types with <${REOPEN_REQ_TYPE_OTHERS_THRESHOLD} entities rolled into "Others" · Coverage: ${fmtPct(reopenReqBase ? reopenReqCoverage / reopenReqBase : 0)} of reopened entities`;
       }
 
       const clmAllRowsByDate = clmFunnelRows(mainStart, mainEnd, pack, ahType);
@@ -1454,6 +1481,108 @@
         render();
       };
 
+      const ccInquiryByAh = window.__ccInquiryByAh || {};
+      const sumCcInto = (approvedSet, target) => {
+        approvedSet.forEach((id) => {
+          const lst = ccInquiryByAh[id];
+          if (!lst) return;
+          lst.forEach((row) => {
+            const k = row.reason || "CC (unspecified)";
+            if (!target[k]) target[k] = { before: 0, after: 0 };
+            target[k].before += row.before30;
+            target[k].after += row.after30;
+          });
+        });
+      };
+      const ccAgg = {};
+      sumCcInto(approvedIdsGlobal, ccAgg);
+      const ccAggComp = {};
+      if (compStart && compEnd) {
+        const compApprovedOnly = setFromRows(
+          clmFunnelRows(compStart, compEnd, pack, ahType),
+          (r) => Number(r.approved_accounts || 0) > 0
+        );
+        sumCcInto(compApprovedOnly, ccAggComp);
+      }
+      let ccIncidentTotal = 0;
+      let ccCustomersWithAny = 0;
+      approvedIdsGlobal.forEach((id) => {
+        const lst = ccInquiryByAh[id];
+        if (!lst || !lst.length) return;
+        ccCustomersWithAny += 1;
+        lst.forEach((row) => {
+          ccIncidentTotal += row.before30 + row.after30;
+        });
+      });
+      const ccList = Object.entries(ccAgg)
+        .map(([reason, v]) => ({
+          reason,
+          before: v.before,
+          after: v.after,
+          total: v.before + v.after,
+        }))
+        .sort((a, b) => b.total - a.total);
+      const ccTopN = 15;
+      const ccMajor = ccList.slice(0, ccTopN);
+      const ccMinor = ccList.slice(ccTopN);
+      const othersBefore = ccMinor.reduce((s, x) => s + x.before, 0);
+      const othersAfter = ccMinor.reduce((s, x) => s + x.after, 0);
+      const ccDisplay =
+        othersBefore + othersAfter > 0
+          ? [
+              ...ccMajor,
+              {
+                reason: "Other reasons (rollup)",
+                before: othersBefore,
+                after: othersAfter,
+                total: othersBefore + othersAfter,
+              },
+            ]
+          : ccMajor;
+      const ccGrandBefore = ccList.reduce((s, x) => s + x.before, 0);
+      const ccGrandAfter = ccList.reduce((s, x) => s + x.after, 0);
+      const escHtml = (s) =>
+        String(s || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/"/g, "&quot;");
+      document.getElementById("ccInquiryBaseMeta").textContent =
+        `Base: ${fmtInt(approvedIdsGlobal.size)} approved customers (registration date range) · ` +
+        `Distinct incidents in view: ${fmtInt(ccIncidentTotal)} · Customers with ≥1 CC incident in ±30d windows: ${fmtInt(ccCustomersWithAny)}`;
+      if (!ccList.length) {
+        document.getElementById("ccInquiryRows").innerHTML =
+          `<div class="small" style="margin-top:8px;">No CC_INQUIRY_SIGNAL loaded. Run refresh_dashboard_data.py (BQ) or extract_cc_inquiries_around_approval.py → _patch_cc_inquiry_signal.py.</div>`;
+        document.getElementById("ccInquiryFootnote").textContent =
+          "Definition gap vs Looker CC dashboards possible if they use different ticket sources or approval anchors.";
+      } else {
+        const compLabel = compStart && compEnd;
+        document.getElementById("ccInquiryRows").innerHTML = [
+          `<div class="cc-row cc-head"><div>Reason (CC taxonomy)</div><div>30d before approval</div><div>30d after approval</div><div>Total</div><div>${compLabel ? "Δ vs comparison" : "Comparison"}</div></div>`,
+          ...ccDisplay.map((x) => {
+            const comp = ccAggComp[x.reason];
+            const mainTotal = x.total;
+            let deltaTxt = "--";
+            if (compLabel) {
+              if (x.reason === "Other reasons (rollup)") {
+                const compOtherBefore = ccMinor.reduce((s, r) => s + (ccAggComp[r.reason]?.before || 0), 0);
+                const compOtherAfter = ccMinor.reduce((s, r) => s + (ccAggComp[r.reason]?.after || 0), 0);
+                const compTot = compOtherBefore + compOtherAfter;
+                deltaTxt = `${mainTotal - compTot >= 0 ? "+" : ""}${fmtInt(mainTotal - compTot)} vs comparison`;
+              } else if (comp) {
+                const ctot = comp.before + comp.after;
+                deltaTxt = `${mainTotal - ctot >= 0 ? "+" : ""}${fmtInt(mainTotal - ctot)} vs comparison`;
+              } else {
+                deltaTxt = `+${fmtInt(mainTotal)} vs comparison`;
+              }
+            }
+            return `<div class="cc-row"><div class="lbl" style="font-weight:600;">${escHtml(x.reason)}</div><div class="num">${fmtInt(x.before)}</div><div class="num">${fmtInt(x.after)}</div><div class="num">${fmtInt(x.total)}</div><div class="delta">${deltaTxt}</div></div>`;
+          }),
+          `<div class="cc-row" style="border-top:2px solid #e5e7eb;font-weight:700;"><div>All reasons</div><div class="num">${fmtInt(ccGrandBefore)}</div><div class="num">${fmtInt(ccGrandAfter)}</div><div class="num">${fmtInt(ccGrandBefore + ccGrandAfter)}</div><div class="delta">--</div></div>`,
+        ].join("");
+        document.getElementById("ccInquiryFootnote").textContent =
+          `Reconciliation: row totals sum to distinct ORN incidents in scope (not unique customers). Top ${ccTopN} reasons shown; remainder rolled into “Other reasons”. If CC_INQUIRY_SIGNAL is empty on GitHub Pages, data has not been refreshed since this signal was added.`;
+      }
+
       const ornBeforeApprovalIds = setFromRows(rows, (r) => !!r.has_orn_ticket_before_approval);
       const withOrnTsBeforeApprovalIds = setFromRows(
         rows,
@@ -1547,10 +1676,12 @@
         { section: "3rd or More Attempt", metric: "Reopen - No Response", ids: new Set([...thirdReopenedIds].filter((id) => thirdAttemptBaseIds.has(id))) },
         { section: "3rd or More Attempt", metric: "Pending Response", ids: new Set([...thirdPendingIds, ...thirdNoOutcomeIds]) },
         { section: "Manual Reopen Analysis", metric: "All Manually Reopened (All Attempts)", ids: allManualReopenIds },
-        ...reopenReqList.slice(0, 10).map((x) => ({
+        ...reopenReqDisplay.map((x) => ({
           section: "Manual Reopen Analysis",
           metric: `Req Type: ${x.type}`,
-          ids: reopenReqByType[x.type] ? reopenReqByType[x.type].entities : new Set(),
+          ids: x.type === "Others"
+            ? reopenReqOthersEntityIds
+            : (reopenReqByType[x.type] ? reopenReqByType[x.type].entities : new Set()),
           note: `${fmtInt(x.notApproved)} rejected subs`,
         })),
         { section: "Post-Approval Requirements & Tickets", metric: "Has Any Requirement Trigger", ids: new Set(triggerAh) },
