@@ -38,6 +38,7 @@
     .r { background:linear-gradient(90deg,#ef4444,#fb7185); }
     .o { background:linear-gradient(90deg,#f97316,#f59e0b); }
     .g { background:linear-gradient(90deg,#10b981,#34d399); }
+    .f { background:linear-gradient(90deg,#0d9488,#14b8a6); }
     .drop { color:#ef4444; font-weight:600; font-size:14px; margin-top:6px; }
     .alert { border:1px solid var(--border); border-radius:12px; padding:12px; margin-top:10px; }
     .a-warn { background:#fff7ed; border-color:#fed7aa; }
@@ -122,7 +123,7 @@
     <div class="grid2">
       <div class="card">
         <div class="h3">Sign-up to Approval Funnel</div>
-        <div class="small">Top funnel starts with completed sign-up AHs, then CLM document submission progression and final approval</div>
+        <div class="small">Top funnel starts with completed sign-up AHs, then CLM document submission progression, approval, and FFT (Looker had_fft among approved)</div>
         <div id="funnelRows"></div>
         <div class="small" style="margin-top:10px;" id="funnelFooter"></div>
       </div>
@@ -294,7 +295,8 @@
         is_bot: r[8], is_bot_expanded: r[9], is_arkose_bot: r[10],
         completed_signup_step: r[11], requests_submitted_step: r[12],
         submitted_all_docs_step: r[13], approved_accounts: r[14], confirmed_tcs_step: r[15],
-        is_csp: r[16] || "0"
+        is_csp: r[16] || "0",
+        had_fft: Number((r[17] !== undefined && r[17] !== null && r[17] !== "") ? r[17] : 0)
       }));
       AUTO_REOPEN_SIGNAL = d.AUTO_REOPEN_SIGNAL.map((r) => ({
         ah_id: r[0], has_reopened_event: r[1], has_pending_event: r[2],
@@ -704,6 +706,9 @@
       const approvedStageMain = clmApprovedMain;
       const submittedAtLeastOneStage = clmSubmittedAtLeastOneMain;
       const submittedAllStage = clmSubmittedAllMain;
+      const fftStageMain = clmMainRows.filter(
+        (r) => Number(r.approved_accounts || 0) > 0 && Number(r.had_fft || 0) > 0
+      ).length;
       const stepChangeText = (prev, next, label) => {
         const safePrev = prev || 0;
         const safeNext = next || 0;
@@ -715,10 +720,11 @@
         barHTML("Completed Sign-up AHs", regsMain, regsMain || 1, "r", "Baseline stage"),
         barHTML("Submitted At Least 1 Doc", submittedAtLeastOneStage, regsMain || 1, "o", stepChangeText(regsMain, submittedAtLeastOneStage, "completed sign-up")),
         barHTML("Submitted All Docs", submittedAllStage, regsMain || 1, "o", stepChangeText(submittedAtLeastOneStage, submittedAllStage, "submitted at least 1 doc")),
-        barHTML("Approved", approvedStageMain, regsMain || 1, "g", stepChangeText(submittedAllStage, approvedStageMain, "submitted all docs"))
+        barHTML("Approved", approvedStageMain, regsMain || 1, "g", stepChangeText(submittedAllStage, approvedStageMain, "submitted all docs")),
+        barHTML("FFT", fftStageMain, regsMain || 1, "f", stepChangeText(approvedStageMain, fftStageMain, "approved"))
       ].join("");
 
-      document.getElementById("funnelFooter").textContent = `Approval rate on selected scope: ${fmtPct(regsMain ? approvedStageMain / regsMain : 0)} · Completed sign-up AHs: ${fmtInt(regsMain)} · Approved: ${fmtInt(approvedStageMain)}`;
+      document.getElementById("funnelFooter").textContent = `Approval rate on selected scope: ${fmtPct(regsMain ? approvedStageMain / regsMain : 0)} · FFT (of approved): ${fmtPct(approvedStageMain ? fftStageMain / approvedStageMain : 0)} · Completed sign-up AHs: ${fmtInt(regsMain)} · Approved: ${fmtInt(approvedStageMain)} · FFT: ${fmtInt(fftStageMain)}`;
 
       document.getElementById("alertNoTicket").textContent = fmtInt(m.withoutTicket);
       document.getElementById("alertConversion").textContent = fmtPct(m.withPs ? m.withTicket / m.withPs : 0);
@@ -1761,6 +1767,7 @@
         { section: "Funnel", metric: "Submitted At Least 1 Doc", ids: submittedAtLeastOneIds },
         { section: "Funnel", metric: "Submitted All Docs", ids: submittedAllIds },
         { section: "Funnel", metric: "Approved", ids: approvedIds },
+        { section: "Funnel", metric: "FFT", ids: setFromRows(clmMainRows, (r) => Number(r.approved_accounts || 0) > 0 && Number(r.had_fft || 0) > 0) },
         { section: "First Review Outcome", metric: "Auto Approved (Any Attempt)", ids: autoApprovedAnyIds },
         { section: "First Review Outcome", metric: "Manually Approved - 1st Attempt", ids: manualApproved1Ids, note: manualApprovedAnyNote },
         { section: "First Review Outcome", metric: "Manually Reopen - Customer Resubmitted", ids: reopenedResubmittedIds },
@@ -1834,7 +1841,7 @@
         });
       }
 
-      // Default main range = CLM screenshot benchmark window where available.
+      // Default main range = last full calendar month, clipped to available data.
       const now = new Date();
       const firstPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const lastPrev = new Date(now.getFullYear(), now.getMonth(), 0);
@@ -1844,13 +1851,20 @@
         const day = String(d.getDate()).padStart(2, "0");
         return `${y}-${m}-${day}`;
       };
-      const prevStart = toIso(firstPrev);
-      const prevEnd = toIso(lastPrev);
-      const clmStart = "2026-02-01";
-      const clmEnd = "2026-02-28";
-      const canUseClmDefault = !allDates.length || (clmStart >= allDates[0] && clmEnd <= allDates[allDates.length - 1]);
-      mainStartInput.value = canUseClmDefault ? clmStart : prevStart;
-      mainEndInput.value = canUseClmDefault ? clmEnd : prevEnd;
+      let mainStart = toIso(firstPrev);
+      let mainEnd = toIso(lastPrev);
+      if (allDates.length) {
+        const minD = allDates[0];
+        const maxD = allDates[allDates.length - 1];
+        if (mainStart < minD) mainStart = minD;
+        if (mainEnd > maxD) mainEnd = maxD;
+        if (mainStart > mainEnd) {
+          mainStart = minD;
+          mainEnd = maxD;
+        }
+      }
+      mainStartInput.value = mainStart;
+      mainEndInput.value = mainEnd;
       compStartInput.value = "";
       compEndInput.value = "";
 
