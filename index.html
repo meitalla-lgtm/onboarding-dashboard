@@ -1382,20 +1382,85 @@
       }
 
       const clmAllRowsByDate = clmFunnelRows(mainStart, mainEnd, pack, ahType);
+      const clmByAhMain = {};
+      clmAllRowsByDate.forEach((row) => {
+        const id = String(row.ah_id || "");
+        if (id) clmByAhMain[id] = row;
+      });
       const approvedIdsGlobal = setFromRows(clmAllRowsByDate, (r) => Number(r.approved_accounts || 0) > 0);
-      const triggerRows = TRIGGERS.filter((r) =>
-        inDateRange((r.registration_date || r.approval_date), mainStart, mainEnd) &&
-        matchesFilterProxy(r.country_business_tier, pack.country_business_tier) &&
-        matchesFilterProxy(r.country_group, pack.country_group) &&
-        matchesFilterProxy(r.ip_country_name, pack.ip_country_name) &&
-        matchesFilterProxy(r.reg_country_name, pack.reg_country_name) &&
-        matchesFilterProxy(r.is_blocked, pack.is_blocked) &&
-        matchesFilterProxy(r.is_bot, pack.is_bot) &&
-        matchesFilterProxy(r.is_bot_expanded, pack.is_bot_expanded) &&
-        matchesFilterProxy(r.is_arkose_bot, pack.is_arkose_bot) &&
-        matchesCsp(r.is_csp, pack.is_csp) &&
-        matchesDataAhType(ahType, r.customer_type || "Unknown")
-      );
+      // TRIGGERS from extract often omit CLM dimensions or registration_date; merge DATA so
+      // top filters + AH type + date range match the same cohort as DATA/CLM (otherwise this
+      // table shows "No triggers" while post-approval KPIs stay non-zero).
+      const triggerRowForFilter = (r) => {
+        const id = String(r.ah_id || "");
+        const d = rowsByAhMainDateRange[id] || rowsByAh[id];
+        const c = clmByAhMain[id];
+        const reg = r.registration_date || (d && d.registration_date) || (c && c.date) || null;
+        const appr = r.approval_date || null;
+        const dateForRange = reg || (appr && String(appr).length >= 10 ? String(appr).slice(0, 10) : appr);
+        return {
+          ...r,
+          registration_date: reg,
+          approval_date: appr,
+          country_business_tier:
+            (d || c) && (!r.country_business_tier || r.country_business_tier === "Unknown")
+              ? ((d && d.country_business_tier) || (c && c.country_business_tier) || r.country_business_tier)
+              : r.country_business_tier,
+          country_group:
+            (d || c) && (!r.country_group || r.country_group === "Unknown")
+              ? ((d && d.country_group) || (c && c.country_group) || r.country_group)
+              : r.country_group,
+          ip_country_name:
+            (d || c) && (!r.ip_country_name || r.ip_country_name === "Unknown")
+              ? ((d && d.ip_country_name) || (c && c.ip_country_name) || r.ip_country_name)
+              : r.ip_country_name,
+          reg_country_name:
+            (d || c) && (!r.reg_country_name || r.reg_country_name === "Unknown")
+              ? ((d && (d.reg_country_name || d.country)) || (c && c.reg_country_name) || r.reg_country_name)
+              : r.reg_country_name,
+          is_blocked:
+            d && d.is_blocked !== undefined ? d.is_blocked : c && c.is_blocked !== undefined ? c.is_blocked : r.is_blocked,
+          is_bot: d && d.is_bot !== undefined ? d.is_bot : c && c.is_bot !== undefined ? c.is_bot : r.is_bot,
+          is_bot_expanded:
+            d && d.is_bot_expanded !== undefined
+              ? d.is_bot_expanded
+              : c && c.is_bot_expanded !== undefined
+                ? c.is_bot_expanded
+                : r.is_bot_expanded,
+          is_arkose_bot:
+            d && d.is_arkose_bot !== undefined
+              ? d.is_arkose_bot
+              : c && c.is_arkose_bot !== undefined
+                ? c.is_arkose_bot
+                : r.is_arkose_bot,
+          is_csp:
+            d && d.is_csp !== undefined && d.is_csp !== null
+              ? String(d.is_csp)
+              : c && c.is_csp !== undefined && c.is_csp !== null
+                ? String(c.is_csp)
+                : String(r.is_csp || "0"),
+          customer_type:
+            (d || c) && (!r.customer_type || r.customer_type === "Unknown")
+              ? ((d && d.customer_type) || (c && c.ah_type) || r.customer_type || "Unknown")
+              : (r.customer_type || "Unknown"),
+          __dateForRange: dateForRange,
+        };
+      };
+      const triggerRows = (TRIGGERS || [])
+        .map(triggerRowForFilter)
+        .filter((r) =>
+          inDateRange(r.__dateForRange || r.registration_date || r.approval_date, mainStart, mainEnd) &&
+          matchesFilterProxy(r.country_business_tier, pack.country_business_tier) &&
+          matchesFilterProxy(r.country_group, pack.country_group) &&
+          matchesFilterProxy(r.ip_country_name, pack.ip_country_name) &&
+          matchesFilterProxy(r.reg_country_name, pack.reg_country_name) &&
+          matchesFilterProxy(r.is_blocked, pack.is_blocked) &&
+          matchesFilterProxy(r.is_bot, pack.is_bot) &&
+          matchesFilterProxy(r.is_bot_expanded, pack.is_bot_expanded) &&
+          matchesFilterProxy(r.is_arkose_bot, pack.is_arkose_bot) &&
+          matchesCsp(r.is_csp, pack.is_csp) &&
+          matchesDataAhType(ahType, r.customer_type || "Unknown")
+        );
       const triggerAh = new Set(triggerRows.map((r) => r.ah_id));
       const triggerWithTicketAh = new Set(
         triggerRows.filter((r) => r.has_ticket_after_trigger).map((r) => r.ah_id)
@@ -1459,8 +1524,15 @@
           .map((r) => String(r.ah_id || ""))
           .filter((id) => postApprovalTicketAh.has(id) || triggerWithTicketAh.has(id))
       );
-      document.getElementById("postApprovalDistMeta").textContent =
+      const triggerMetaNote =
         `Note: a customer can appear under multiple triggers, so row counts are not additive to unique ticketed customers (${fmtInt(triggerWithTicketAhResolved.size)}).`;
+      const triggerGapNote =
+        !triggerRows.length && (withReqPostApproval > 0 || withKycTicketPostApproval > 0) && (TRIGGERS || []).length > 0
+          ? " TRIGGERS rows existed but none matched filters/date after linking to CLM/DATA—if this persists, re-run full dashboard build so TRIGGERS carries registration + dimensions."
+          : !triggerRows.length && (TRIGGERS || []).length === 0
+            ? " TRIGGERS array is empty in data.json.gz (run update_unified_dashboard_v1_html.py to rebuild triggers from BQ/CSV)."
+            : "";
+      document.getElementById("postApprovalDistMeta").textContent = triggerMetaNote + triggerGapNote;
       const triggerDisplay = othersTickets > 0
         ? [...triggerMajor, { trigger: "Others", tickets: othersTickets, ticketRate: othersCustomers ? (othersWithTicket / othersCustomers) : 0 }]
         : triggerMajor;
