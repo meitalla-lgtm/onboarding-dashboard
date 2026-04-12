@@ -196,7 +196,7 @@
 
     <div class="card" style="margin-top:12px;">
       <div class="h3">CC inquiries before vs after approval (30 days)</div>
-      <div class="small">ORN incidents whose subject line starts with &quot;CC,&quot; (same style as internal ticket description). Reason = second segment after the comma. Windows: created time in [approval − 30d, approval) vs [approval, approval + 30d). Approval time matches strict-touch (ORN AH_KYC=25 vs qualification approved-after-pending, earliest).</div>
+      <div class="small">Customer Care scope: ORN subject or <code>c_log_description</code> contains &quot;CC,&quot; <b>or</b> linked <code>ORN_Incidents_Content</code> row has a <code>Queue</code> starting with &quot;CC&quot; (matches internal CC queues when subject is e.g. Inbound Call). Reason = second segment after &quot;CC,&quot; when present; else queue name after &quot;CC -&quot;. Windows: incident <code>created</code> in [approval − 30d, approval) vs [approval, approval + 30d). Approval = strict-touch (earliest ORN AH_KYC=25 vs qualification approved-after-pending).</div>
       <div class="small" id="ccInquiryBaseMeta" style="margin-top:8px;">Base: -- approved customers · Ticket incidents: --</div>
       <div id="ccInquiryRows" style="margin-top:10px;"></div>
       <div class="small" id="ccInquiryFootnote" style="margin-top:10px;color:#9ca3af;">--</div>
